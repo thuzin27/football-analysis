@@ -30,15 +30,39 @@ public class DatabaseConfig {
 
             HikariConfig config = new HikariConfig();
 
-            String host     = getEnv(dotenv, "DB_HOST",     "localhost");
-            String port     = getEnv(dotenv, "DB_PORT",     "5432");
-            String dbName   = getEnv(dotenv, "DB_NAME",     "football_db");
-            String user     = getEnv(dotenv, "DB_USER",     "postgres");
-            String password = getEnv(dotenv, "DB_PASSWORD", "");
+            String dbUrl = getEnv(dotenv, "DATABASE_URL", null);
+            if (dbUrl != null && !dbUrl.isBlank()) {
+                // Render injeta DATABASE_URL no formato postgres://user:pass@host:port/db
+                String normalized = dbUrl.replaceFirst("^postgres://", "postgresql://");
+                java.net.URI uri  = new java.net.URI(normalized);
+                String host       = uri.getHost();
+                int    port       = uri.getPort() > 0 ? uri.getPort() : 5432;
+                String dbName     = uri.getPath().replaceFirst("^/", "");
+                String[] ui       = uri.getUserInfo() != null
+                                    ? uri.getUserInfo().split(":", 2)
+                                    : new String[]{"", ""};
+                String user       = java.net.URLDecoder.decode(ui[0], java.nio.charset.StandardCharsets.UTF_8);
+                String password   = ui.length > 1
+                                    ? java.net.URLDecoder.decode(ui[1], java.nio.charset.StandardCharsets.UTF_8)
+                                    : "";
+                // Preserva query params da URL (ex: ?sslmode=require)
+                String query      = uri.getQuery() != null ? "?" + uri.getQuery() : "";
 
-            config.setJdbcUrl("jdbc:postgresql://" + host + ":" + port + "/" + dbName);
-            config.setUsername(user);
-            config.setPassword(password);
+                config.setJdbcUrl("jdbc:postgresql://" + host + ":" + port + "/" + dbName + query);
+                config.setUsername(user);
+                config.setPassword(password);
+            } else {
+                // Dev local: variáveis separadas do .env
+                String host     = getEnv(dotenv, "DB_HOST",     "localhost");
+                String port     = getEnv(dotenv, "DB_PORT",     "5432");
+                String dbName   = getEnv(dotenv, "DB_NAME",     "DataKick");
+                String user     = getEnv(dotenv, "DB_USER",     "postgres");
+                String password = getEnv(dotenv, "DB_PASSWORD", "");
+
+                config.setJdbcUrl("jdbc:postgresql://" + host + ":" + port + "/" + dbName);
+                config.setUsername(user);
+                config.setPassword(password);
+            }
 
             // Pool settings
             config.setMaximumPoolSize(10);

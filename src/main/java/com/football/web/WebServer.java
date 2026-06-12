@@ -34,7 +34,8 @@ import java.util.concurrent.*;
  */
 public class WebServer {
 
-    private static final int PORT = 8080;
+    private static final int PORT = Optional.ofNullable(System.getenv("PORT"))
+        .filter(s -> !s.isBlank()).map(Integer::parseInt).orElse(8080);
 
     private static final List<String> CONFS = List.of(
         "América do Sul", "Europa", "África", "América do Norte", "Ásia", "Oceania"

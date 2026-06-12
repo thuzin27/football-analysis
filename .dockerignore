@@ -1,0 +1,12 @@
+target/
+.git/
+.idea/
+.vscode/
+*.iml
+.env
+*.log
+out.txt
+err.txt
+srv_out.txt
+srv_err.txt
+node_modules/
