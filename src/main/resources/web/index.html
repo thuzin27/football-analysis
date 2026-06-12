@@ -1068,7 +1068,7 @@
     }
 
     const btnClass = temDados ? ' has-data' : temStandings ? ' api-data' : '';
-    const btnLabel = temDados ? 'Predição DKP' : temStandings ? 'Sincronize para DKP' : 'Sem dados ainda';
+    const btnLabel = temDados ? 'Predição DKP' : temStandings ? 'Ver análise DKP' : 'Sem dados ainda';
 
     return `
       <div class="team-card" onclick="verPredicao(${s.id},'${s.nome}','${s.tla}')">
@@ -1412,21 +1412,32 @@
       const resp = await fetch(`/api/predicao/${id}`);
       const d    = await resp.json();
 
-      if (d.error || d.totalPartidas === 0) {
-        const st = standingsPorTla[tla];
-        const jogosApi = st ? st.j : 0;
+      if (d.sincronizando) {
         mc.innerHTML = `
           <div class="modal-header">
             <span class="modal-title">${flagHtml}${nome}</span>
             <button class="modal-close" onclick="fecharModal()">×</button>
           </div>
           <div style="text-align:center;padding:34px 16px;color:#8b949e">
-            <div style="font-size:1.8rem;margin-bottom:10px">${jogosApi > 0 ? '📊' : '⏳'}</div>
-            ${jogosApi > 0
-              ? `<strong style="color:#d29922">${jogosApi} jogo${jogosApi>1?'s':''} disputado${jogosApi>1?'s':''} na Copa 2026</strong><br>
-                 <small>Sincronize os dados para ativar a predição DKP.</small>`
-              : `Sem partidas sincronizadas.<br>
-                 <small>Aguarde os jogos da Copa 2026.</small>`}
+            <div style="font-size:1.8rem;margin-bottom:10px;animation:pulse 1.5s infinite">⚙️</div>
+            <strong style="color:#58a6ff">Calculando predição DKP...</strong><br>
+            <small>Sincronizando partidas automaticamente.</small>
+          </div>`;
+        setTimeout(() => {
+          if (document.getElementById('modalOverlay').classList.contains('open')) verPredicao(id, nome, tla);
+        }, 3000);
+        return;
+      }
+      if (d.error || d.totalPartidas === 0) {
+        mc.innerHTML = `
+          <div class="modal-header">
+            <span class="modal-title">${flagHtml}${nome}</span>
+            <button class="modal-close" onclick="fecharModal()">×</button>
+          </div>
+          <div style="text-align:center;padding:34px 16px;color:#8b949e">
+            <div style="font-size:1.8rem;margin-bottom:10px">⏳</div>
+            Sem partidas sincronizadas.<br>
+            <small>Aguarde os jogos da Copa 2026.</small>
           </div>`;
         return;
       }
@@ -1557,6 +1568,7 @@
     try {
       const resp = await fetch(`/api/predicao/${id}`);
       const d = await resp.json();
+      if (d.sincronizando) return {sincronizando: true};
       if (d.error || !d.totalPartidas) return null;
       return d;
     } catch { return null; }
@@ -1608,19 +1620,19 @@
   function renderAnalyticsSide(pred, nome, tla, side) {
     const flag = flagImg(tla, 'flag-img');
     let conteudo;
-    if (!pred) {
-      const st = standingsPorTla[tla];
-      const jogosApi = st ? st.j : 0;
-      conteudo = jogosApi > 0
-        ? `<div style="text-align:center;padding:14px 8px">
-             <div style="font-size:1.3rem;margin-bottom:6px">📊</div>
-             <div style="font-size:.82rem;color:#d29922;font-weight:600">${jogosApi} jogo${jogosApi>1?'s':''} na Copa 2026</div>
-             <div style="font-size:.71rem;color:#6e7681;margin-top:4px">Sincronize para análise DKP</div>
-           </div>`
-        : `<div class="insuficiente-aviso" style="flex-direction:column;gap:5px;align-items:flex-start">
-             <div style="font-size:1.2rem">⏳</div>
-             <div>Sem dados disponíveis<br><small style="color:#6e7681">Aguardando partidas da Copa 2026</small></div>
-           </div>`;
+    if (pred && pred.sincronizando) {
+      conteudo = `
+        <div style="text-align:center;padding:14px 8px">
+          <div style="font-size:1.3rem;margin-bottom:6px;animation:pulse 1.5s infinite">⚙️</div>
+          <div style="font-size:.82rem;color:#58a6ff;font-weight:600">Calculando predição...</div>
+          <div style="font-size:.71rem;color:#6e7681;margin-top:4px">Sincronizando automaticamente</div>
+        </div>`;
+    } else if (!pred) {
+      conteudo = `
+        <div class="insuficiente-aviso" style="flex-direction:column;gap:5px;align-items:flex-start">
+          <div style="font-size:1.2rem">⏳</div>
+          <div>Sem dados disponíveis<br><small style="color:#6e7681">Aguardando partidas da Copa 2026</small></div>
+        </div>`;
     } else {
       const insuf = pred.totalPartidas < 3;
       const mediaPro    = pred.totalPartidas > 0 ? (pred.totalGolsPro    / pred.totalPartidas).toFixed(1) : '—';
@@ -1714,34 +1726,37 @@
       selFora ? fetchPred(selFora.id) : Promise.resolve(null),
     ]);
 
+    const algumSincronizando = !!(predCasa?.sincronizando || predFora?.sincronizando);
+    const predCasaEfetiva = predCasa?.sincronizando ? null : predCasa;
+    const predForaEfetiva = predFora?.sincronizando ? null : predFora;
+
     // Probabilidades combinadas do confronto
     let probsHtml = '';
-    if (!predCasa && !predFora) {
-      const stC = standingsPorTla[p.casa.tla];
-      const stF = standingsPorTla[p.fora.tla];
-      const algumJogou = (stC && stC.j > 0) || (stF && stF.j > 0);
+    if (!predCasaEfetiva && !predForaEfetiva) {
       probsHtml = `
         <div class="insuficiente-aviso">
-          <span style="font-size:1.4rem">${algumJogou ? '📊' : '⏳'}</span>
-          <div>${algumJogou
-            ? `Partidas registradas — sincronize para ver probabilidades DKP.`
+          <span style="font-size:1.4rem${algumSincronizando ? ';animation:pulse 1.5s infinite' : ''}">${algumSincronizando ? '⚙️' : '⏳'}</span>
+          <div>${algumSincronizando
+            ? `Calculando probabilidades do confronto...`
             : `Sem dados disponíveis<br><small>Aguardando partidas da Copa 2026</small>`}
           </div>
         </div>`;
     } else {
-      const pCV = predCasa ? predCasa.probVitoria : 1/3;
-      const pCE = predCasa ? predCasa.probEmpate  : 1/3;
-      const pFV = predFora ? predFora.probVitoria : 1/3;
-      const pFE = predFora ? predFora.probEmpate  : 1/3;
+      const pCV = predCasaEfetiva ? predCasaEfetiva.probVitoria : 1/3;
+      const pCE = predCasaEfetiva ? predCasaEfetiva.probEmpate  : 1/3;
+      const pFV = predForaEfetiva ? predForaEfetiva.probVitoria : 1/3;
+      const pFE = predForaEfetiva ? predForaEfetiva.probEmpate  : 1/3;
       const rC  = pCV, rE = (pCE + pFE) / 2, rF = pFV;
       const tot = rC + rE + rF;
       const pC  = rC / tot, pE = rE / tot, pF = rF / tot;
 
       const avisos = [];
-      if (!predCasa)                        avisos.push(`Sem dados para ${p.casa.nome}`);
-      else if (predCasa.totalPartidas < 3)  avisos.push(`${p.casa.nome}: ${predCasa.totalPartidas} jogo${predCasa.totalPartidas>1?'s':''} — amostra insuficiente`);
-      if (!predFora)                        avisos.push(`Sem dados para ${p.fora.nome}`);
-      else if (predFora.totalPartidas < 3)  avisos.push(`${p.fora.nome}: ${predFora.totalPartidas} jogo${predFora.totalPartidas>1?'s':''} — amostra insuficiente`);
+      if (!predCasaEfetiva && algumSincronizando) avisos.push(`${p.casa.nome}: calculando...`);
+      else if (!predCasaEfetiva)                  avisos.push(`Sem dados para ${p.casa.nome}`);
+      else if (predCasaEfetiva.totalPartidas < 3) avisos.push(`${p.casa.nome}: ${predCasaEfetiva.totalPartidas} jogo${predCasaEfetiva.totalPartidas>1?'s':''} — amostra insuficiente`);
+      if (!predForaEfetiva && algumSincronizando) avisos.push(`${p.fora.nome}: calculando...`);
+      else if (!predForaEfetiva)                  avisos.push(`Sem dados para ${p.fora.nome}`);
+      else if (predForaEfetiva.totalPartidas < 3) avisos.push(`${p.fora.nome}: ${predForaEfetiva.totalPartidas} jogo${predForaEfetiva.totalPartidas>1?'s':''} — amostra insuficiente`);
 
       probsHtml = `
         <div class="prob-section">
@@ -1784,6 +1799,12 @@
     setTimeout(() => {
       document.querySelectorAll('#modalContent .prob-bar-fill').forEach(el => { el.style.width = el.dataset.w; });
     }, 60);
+
+    if (algumSincronizando) {
+      setTimeout(() => {
+        if (document.getElementById('modalOverlay').classList.contains('open')) verConfronto(idx);
+      }, 3000);
+    }
   }
 
   // ── Fechar Modal ───────────────────────────────────────────────

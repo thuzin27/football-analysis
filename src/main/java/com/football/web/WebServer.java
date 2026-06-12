@@ -9,8 +9,10 @@ import com.football.algorithm.PredictionAlgorithm.Predicao;
 import com.football.api.ApiFootballClient;
 import com.football.config.DatabaseConfig;
 import com.football.model.Partida;
+import com.football.model.Regiao;
 import com.football.model.Selecao;
 import com.football.repository.Repositories.*;
+import com.football.service.DataSyncService;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
@@ -20,6 +22,7 @@ import java.sql.*;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * WebServer — dashboard HTML para a Copa do Mundo 2026.
@@ -43,7 +46,15 @@ public class WebServer {
     private final ObjectMapper        mapper      = new ObjectMapper();
     private final PartidaRepository   partidaRepo = new PartidaRepository();
     private final SelecaoRepository   selecaoRepo = new SelecaoRepository();
+    private final RegiaoRepository    regiaoRepo  = new RegiaoRepository();
     private final ApiFootballClient   apiClient   = new ApiFootballClient();
+    private final DataSyncService     dataSyncService = new DataSyncService();
+    private final ExecutorService     autoSyncExecutor = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "auto-sync"); t.setDaemon(true); return t;
+    });
+    private final Set<String>         emSincronizacao = ConcurrentHashMap.newKeySet();
+    private final Map<String, Integer> apiTeamIdPorTla = new ConcurrentHashMap<>();
+    private final Map<String, Integer> apiJogosPlayed  = new ConcurrentHashMap<>();
     private HttpServer                server;
     private volatile boolean          rodando     = false;
 
@@ -66,6 +77,7 @@ public class WebServer {
         server.createContext("/api/proximos",   this::handleProximos);
         server.createContext("/api/grupos",     this::handleGrupos);
         server.createContext("/api/confrontos", this::handleConfrontos);
+        server.createContext("/api/status",    this::handleStatus);
         server.createContext("/",               this::handleRoot);
         server.setExecutor(null);
         server.start();
@@ -77,6 +89,7 @@ public class WebServer {
     }
 
     public void parar() {
+        autoSyncExecutor.shutdownNow();
         if (server != null) {
             server.stop(0);
             rodando = false;
@@ -198,7 +211,12 @@ public class WebServer {
             Selecao sel = selecaoRepo.buscarPorId(selecaoId);
 
             if (historico.isEmpty()) {
-                responderJson(ex, "{\"totalPartidas\":0,\"error\":\"sem dados\"}");
+                String tla = sel != null ? sel.getCodigoFifa() : null;
+                if (tla != null && tentarAutoSync(sel, tla)) {
+                    responderJson(ex, "{\"totalPartidas\":0,\"sincronizando\":true}");
+                } else {
+                    responderJson(ex, "{\"totalPartidas\":0,\"error\":\"sem dados\"}");
+                }
                 return;
             }
 
@@ -349,11 +367,18 @@ public class WebServer {
                 JsonNode table = s.path("table");
                 if (table.isArray()) {
                     for (JsonNode row : table) {
+                        String rowTla    = row.path("team").path("tla").asText("?");
+                        int    rowTeamId = row.path("team").path("id").asInt(0);
+                        int    rowJogos  = row.path("playedGames").asInt(0);
+                        if (!rowTla.isBlank() && !"?".equals(rowTla) && rowTeamId > 0) {
+                            apiTeamIdPorTla.put(rowTla, rowTeamId);
+                            apiJogosPlayed.put(rowTla, rowJogos);
+                        }
                         ObjectNode time = mapper.createObjectNode();
                         time.put("pos",   row.path("position").asInt());
                         time.put("nome",  row.path("team").path("name").asText("?"));
-                        time.put("tla",   row.path("team").path("tla").asText("?"));
-                        time.put("j",     row.path("playedGames").asInt());
+                        time.put("tla",   rowTla);
+                        time.put("j",     rowJogos);
                         time.put("v",     row.path("won").asInt());
                         time.put("e",     row.path("draw").asInt());
                         time.put("d",     row.path("lost").asInt());
@@ -371,7 +396,12 @@ public class WebServer {
 
         ObjectNode out = mapper.createObjectNode();
         out.set("grupos", grupos);
-        return mapper.writeValueAsString(out);
+        String json = mapper.writeValueAsString(out);
+        autoSyncExecutor.submit(() -> {
+            try { verificarEAutoSincronizar(); }
+            catch (Exception e) { System.err.println("[AutoSync] Erro na verificação: " + e.getMessage()); }
+        });
+        return json;
     }
 
     // ----------------------------------------------------------------
@@ -628,5 +658,78 @@ public class WebServer {
 
     private String esc(String s) {
         return s == null ? "" : s.replace("\"", "'");
+    }
+
+    // ----------------------------------------------------------------
+    //  GET /api/status — times em sincronização automática
+    // ----------------------------------------------------------------
+    private void handleStatus(HttpExchange ex) throws IOException {
+        setCors(ex);
+        if ("OPTIONS".equals(ex.getRequestMethod())) { ex.sendResponseHeaders(204, -1); return; }
+        try {
+            ObjectNode out = mapper.createObjectNode();
+            ArrayNode arr = mapper.createArrayNode();
+            emSincronizacao.forEach(arr::add);
+            out.set("sincronizando", arr);
+            responderJson(ex, mapper.writeValueAsString(out));
+        } catch (Exception e) {
+            responderJson(ex, "{\"sincronizando\":[]}");
+        }
+    }
+
+    // ----------------------------------------------------------------
+    //  AUTO-SYNC — dispara sincronização em background quando standings
+    //  mostra jogos que o banco ainda não tem.
+    // ----------------------------------------------------------------
+    private boolean tentarAutoSync(Selecao sel, String tla) {
+        if (sel == null || tla == null) return false;
+        int apiJogos = apiJogosPlayed.getOrDefault(tla, 0);
+        if (apiJogos == 0) return false;
+        if (!emSincronizacao.add(tla)) return true; // já em progresso
+        Integer apiTeamId = apiTeamIdPorTla.get(tla);
+        if (apiTeamId == null) { emSincronizacao.remove(tla); return false; }
+        try {
+            List<Partida> hist = partidaRepo.listarPorSelecaoOrdenado(sel.getId());
+            if (hist.size() >= apiJogos) { emSincronizacao.remove(tla); return false; }
+        } catch (Exception e) { emSincronizacao.remove(tla); return false; }
+        String nomeSelecao = sel.getNome();
+        String nomeRegiao  = buscarNomeRegiao(sel.getRegiaoId());
+        int    teamId      = apiTeamId;
+        autoSyncExecutor.submit(() -> {
+            try {
+                System.out.println("[AutoSync] Iniciando: " + tla);
+                dataSyncService.sincronizar(nomeRegiao, nomeSelecao, tla, 0, teamId, 2026);
+                cacheConfrontos = null;
+                System.out.println("[AutoSync] Concluído: " + tla);
+            } catch (Exception e) {
+                System.err.println("[AutoSync] Erro " + tla + ": " + e.getMessage());
+            } finally {
+                emSincronizacao.remove(tla);
+            }
+        });
+        return true;
+    }
+
+    private void verificarEAutoSincronizar() {
+        for (Map.Entry<String, Integer> e : apiJogosPlayed.entrySet()) {
+            String tla      = e.getKey();
+            int    jogosApi = e.getValue();
+            if (jogosApi == 0 || emSincronizacao.contains(tla)) continue;
+            try {
+                Selecao sel = selecaoRepo.buscarPorCodigoFifa(tla);
+                if (sel == null) continue;
+                List<Partida> hist = partidaRepo.listarPorSelecaoOrdenado(sel.getId());
+                if (hist.size() < jogosApi) tentarAutoSync(sel, tla);
+            } catch (Exception ex) {
+                System.err.println("[AutoSync] Erro verificando " + tla + ": " + ex.getMessage());
+            }
+        }
+    }
+
+    private String buscarNomeRegiao(int regiaoId) {
+        try {
+            Regiao r = regiaoRepo.buscarPorId(regiaoId);
+            return r != null ? r.getNome() : "Outros";
+        } catch (Exception e) { return "Outros"; }
     }
 }
