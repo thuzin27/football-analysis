@@ -1,0 +1,9 @@
+target/
+*.log
+out.txt
+err.txt
+srv_out.txt
+srv_err.txt
+test_input.txt
+test_output.txt
+.env

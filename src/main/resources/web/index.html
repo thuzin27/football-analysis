@@ -1,0 +1,1807 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DataKick — Copa do Mundo 2026</title>
+  <style>
+    /* ── Reset & Base ─────────────────────────────────────────── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0d1117;
+      color: #c9d1d9;
+      min-height: 100vh;
+    }
+
+    /* ── Header ──────────────────────────────────────────────── */
+    header {
+      background: linear-gradient(135deg, #161b22 0%, #1c2435 100%);
+      border-bottom: 1px solid #21262d;
+      padding: 16px 28px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-logo { font-size: 1.8rem; line-height: 1; }
+    .header-text h1 { font-size: 1.3rem; font-weight: 700; color: #f0b429; }
+    .header-text p  { font-size: .78rem; color: #8b949e; margin-top: 1px; }
+
+    .live-badge {
+      margin-left: auto;
+      background: #238636;
+      color: #fff;
+      padding: 4px 11px;
+      border-radius: 12px;
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .04em;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: .5; }
+    }
+
+    /* ── View Navigation ─────────────────────────────────────── */
+    .view-nav {
+      display: flex;
+      gap: 2px;
+      background: #161b22;
+      border-bottom: 1px solid #21262d;
+      padding: 0 28px;
+    }
+
+    .view-tab {
+      padding: 12px 18px;
+      border: none;
+      background: none;
+      color: #8b949e;
+      cursor: pointer;
+      font-size: .85rem;
+      font-weight: 500;
+      border-bottom: 2px solid transparent;
+      transition: color .15s, border-color .15s;
+    }
+    .view-tab:hover  { color: #c9d1d9; }
+    .view-tab.active { color: #f0b429; border-bottom-color: #f0b429; font-weight: 700; }
+
+    /* ── Layout ──────────────────────────────────────────────── */
+    main { padding: 24px 28px; max-width: 1440px; margin: 0 auto; }
+
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* ── Confederation Tabs ──────────────────────────────────── */
+    .conf-tabs {
+      display: flex;
+      gap: 7px;
+      margin-bottom: 22px;
+      flex-wrap: wrap;
+    }
+
+    .conf-tab {
+      padding: 6px 13px;
+      border: 1px solid #30363d;
+      background: #161b22;
+      color: #8b949e;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: .8rem;
+      transition: all .15s;
+    }
+    .conf-tab:hover  { border-color: #f0b429; color: #f0b429; }
+    .conf-tab.active { background: #f0b429; color: #0d1117; border-color: #f0b429; font-weight: 700; }
+
+    /* ── Section Header ──────────────────────────────────────── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #21262d;
+    }
+    .section-header h2 { font-size: .92rem; font-weight: 700; color: #e6edf3; }
+
+    .badge {
+      background: #21262d;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: .7rem;
+      color: #8b949e;
+    }
+
+    /* ── Team Grid ───────────────────────────────────────────── */
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 11px;
+      margin-bottom: 30px;
+    }
+
+    /* ── Team Card ───────────────────────────────────────────── */
+    .team-card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      padding: 14px;
+      cursor: pointer;
+      transition: border-color .15s, transform .15s, box-shadow .15s;
+    }
+    .team-card:hover {
+      border-color: #f0b429;
+      transform: translateY(-2px);
+      box-shadow: 0 5px 14px rgba(240,180,41,.1);
+    }
+
+    .team-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 9px;
+    }
+
+    .team-flag {
+      flex-shrink: 0;
+      width: 36px;
+      height: 26px;
+      border-radius: 3px;
+      overflow: hidden;
+      background: #21262d;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .team-flag img { width: 100%; height: 100%; object-fit: cover; }
+
+    .flag-tla { font-size: .63rem; font-weight: 700; color: #8b949e; }
+
+    .team-info h3 { font-size: .85rem; font-weight: 600; color: #e6edf3; }
+    .team-flag-sm {
+      margin-top: 3px;
+      width: 20px;
+      height: 14px;
+      border-radius: 2px;
+      overflow: hidden;
+      background: #21262d;
+    }
+    .team-flag-sm img { width: 100%; height: 100%; object-fit: cover; }
+
+    .team-stats { display: flex; gap: 4px; margin-top: 7px; }
+    .stat-chip  {
+      flex: 1;
+      text-align: center;
+      padding: 3px 2px;
+      border-radius: 4px;
+      font-size: .75rem;
+      font-weight: 700;
+    }
+    .stat-v { background: rgba(35,134,54,.18);  color: #3fb950; border: 1px solid rgba(35,134,54,.3); }
+    .stat-e { background: rgba(187,128,9,.18);  color: #d29922; border: 1px solid rgba(187,128,9,.3); }
+    .stat-d { background: rgba(248,81,73,.18);  color: #f85149; border: 1px solid rgba(248,81,73,.3); }
+
+    .gols-line { font-size: .68rem; color: #484f58; text-align: center; margin-top: 4px; }
+    .no-data   { font-size: .7rem;  color: #484f58; text-align: center; padding: 5px 0; }
+
+    .stats-bar { margin-top: 4px; height: 3px; background: #21262d; border-radius: 2px; overflow: hidden; display: flex; }
+    .stats-bar-v { background: #238636; height: 100%; }
+    .stats-bar-e { background: #bb8009; height: 100%; }
+    .stats-bar-d { background: #da3633; height: 100%; }
+
+    .predict-btn {
+      width: 100%;
+      margin-top: 9px;
+      padding: 6px;
+      background: transparent;
+      border: 1px solid #30363d;
+      color: #8b949e;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: .74rem;
+      transition: border-color .15s, color .15s;
+    }
+    .predict-btn:hover           { border-color: #f0b429; color: #f0b429; }
+    .predict-btn.has-data        { border-color: #388bfd44; color: #58a6ff; }
+    .predict-btn.has-data:hover  { border-color: #388bfd;   color: #388bfd; }
+    /* Time jogou mas ainda não foi sincronizado para o DKP */
+    .predict-btn.api-data        { border-color: #bb800944; color: #d29922; }
+    .predict-btn.api-data:hover  { border-color: #bb8009;   color: #d29922; }
+
+    /* ── Próximos Jogos ──────────────────────────────────────── */
+    .matches-day { margin-bottom: 22px; }
+
+    .day-header {
+      font-size: .72rem;
+      font-weight: 700;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #21262d;
+    }
+
+    .match-card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .match-card:hover {
+      border-color: #388bfd44;
+      box-shadow: 0 4px 12px rgba(56,139,253,.1);
+    }
+
+    .match-time {
+      font-size: .78rem;
+      color: #8b949e;
+      width: 48px;
+      flex-shrink: 0;
+      text-align: center;
+    }
+
+    .match-teams {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .match-team {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: .85rem;
+      font-weight: 600;
+      color: #e6edf3;
+    }
+    .match-team.away { flex-direction: row-reverse; }
+
+    .match-flag {
+      width: 28px;
+      height: 20px;
+      border-radius: 2px;
+      overflow: hidden;
+      background: #21262d;
+      flex-shrink: 0;
+    }
+    .match-flag img { width: 100%; height: 100%; object-fit: cover; }
+
+    .match-vs {
+      font-size: .78rem;
+      color: #484f58;
+      font-weight: 700;
+    }
+
+    .match-meta {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 3px;
+      flex-shrink: 0;
+    }
+
+    .match-stage {
+      font-size: .65rem;
+      color: #6e7681;
+      background: #21262d;
+      padding: 2px 7px;
+      border-radius: 9px;
+    }
+
+    .match-grupo {
+      font-size: .65rem;
+      color: #f0b429;
+      font-weight: 700;
+    }
+
+    /* ── Classificação por Grupos ────────────────────────────── */
+    .grupos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+      margin-bottom: 30px;
+    }
+
+    .grupo-card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .grupo-title {
+      padding: 10px 14px;
+      background: #21262d;
+      font-size: .8rem;
+      font-weight: 700;
+      color: #f0b429;
+      border-bottom: 1px solid #30363d;
+    }
+
+    .grupo-table { width: 100%; border-collapse: collapse; }
+
+    .grupo-table th {
+      padding: 7px 10px;
+      font-size: .65rem;
+      font-weight: 600;
+      color: #6e7681;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .grupo-table th:first-child { text-align: left; width: 36px; }
+    .grupo-table th:nth-child(2) { text-align: left; }
+
+    .grupo-table td {
+      padding: 8px 10px;
+      font-size: .8rem;
+      text-align: center;
+      border-top: 1px solid #21262d;
+    }
+    .grupo-table td:first-child { color: #8b949e; font-weight: 600; }
+    .grupo-table td:nth-child(2) {
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      color: #e6edf3;
+    }
+
+    /* Destaque classificados (top 2) */
+    .grupo-table tr.classificado td { border-left: 3px solid #238636; }
+    .grupo-table tr.classificado td:first-child { padding-left: 7px; }
+
+    .grupo-flag {
+      width: 22px;
+      height: 15px;
+      border-radius: 2px;
+      overflow: hidden;
+      background: #30363d;
+      flex-shrink: 0;
+    }
+    .grupo-flag img { width: 100%; height: 100%; object-fit: cover; }
+
+    .pts-cell { font-weight: 700; color: #e6edf3; }
+    .sg-pos   { color: #3fb950; }
+    .sg-neg   { color: #f85149; }
+
+    /* ── Modal ───────────────────────────────────────────────── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.72);
+      z-index: 1000;
+      backdrop-filter: blur(4px);
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 14px;
+      width: 92%;
+      max-width: 470px;
+      max-height: 88vh;
+      overflow-y: auto;
+      padding: 22px;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .modal-title {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #e6edf3;
+    }
+    .modal-title-flag { width: 30px; height: 21px; border-radius: 2px; overflow: hidden; }
+    .modal-title-flag img { width: 100%; height: 100%; object-fit: cover; }
+    .modal-close {
+      background: none;
+      border: none;
+      color: #8b949e;
+      font-size: 1.4rem;
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 4px;
+      line-height: 1;
+    }
+    .modal-close:hover { color: #f85149; background: #21262d; }
+
+    .verdict {
+      background: #0d419d1a;
+      border: 1px solid #1f6feb44;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 15px;
+      font-size: .82rem;
+      color: #79c0ff;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .meta-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin-bottom: 16px;
+      align-items: start;
+    }
+    .meta-stat      { background: #21262d; border-radius: 7px; padding: 9px; text-align: center; display: flex; flex-direction: column; }
+    .meta-stat-val  { font-size: 1.2rem; font-weight: 700; color: #f0b429; }
+    .meta-stat-lbl  { font-size: .68rem; color: #8b949e; margin-top: 2px; }
+
+    .prob-section { margin-bottom: 16px; }
+    .prob-section h4,
+    .matches-section h4 {
+      font-size: .7rem;
+      color: #8b949e;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .prob-row     { display: flex; align-items: center; gap: 7px; margin-bottom: 6px; }
+    .prob-label   { width: 60px; font-size: .8rem; color: #c9d1d9; }
+    .prob-bar-bg  { flex: 1; height: 8px; background: #21262d; border-radius: 4px; overflow: hidden; }
+    .prob-bar-fill { height: 100%; border-radius: 4px; width: 0; transition: width .65s ease; }
+    .bar-v    { background: linear-gradient(90deg, #238636, #3fb950); }
+    .bar-e    { background: linear-gradient(90deg, #bb8009, #d29922); }
+    .bar-d    { background: linear-gradient(90deg, #da3633, #f85149); }
+    .bar-fora { background: linear-gradient(90deg, #1f6feb, #388bfd); }
+    .prob-pct { width: 40px; text-align: right; font-size: .8rem; font-weight: 700; color: #e6edf3; }
+    /* fixed-width para alinhar as barras mesmo com nomes longos (ex: "South Africa vence") */
+    .prob-label-lg { width: 155px; flex-shrink: 0; font-size: .78rem; color: #c9d1d9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* ── Resumo de Gols ──────────────────────────────────────── */
+    .gols-summary {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .gols-item {
+      background: #21262d;
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .gols-icon  { font-size: 1.4rem; line-height: 1; flex-shrink: 0; }
+    .gols-total { font-size: 1.7rem; font-weight: 700; color: #e6edf3; line-height: 1; }
+    .gols-lbl   { font-size: .68rem; color: #8b949e; margin-top: 2px; text-transform: uppercase; letter-spacing: .04em; }
+    .gols-media { font-size: .72rem; color: #6e7681; margin-top: 3px; }
+
+    .matches-section { margin-bottom: 4px; }
+    .match-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 0;
+      border-bottom: 1px solid #21262d;
+      font-size: .78rem;
+    }
+    .match-date  { color: #8b949e; width: 50px; font-size: .71rem; }
+    .match-adv   { flex: 1; color: #c9d1d9; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .match-score { color: #e6edf3; font-weight: 700; font-family: monospace; width: 36px; text-align: center; }
+
+    .res-badge {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .65rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .res-V { background: #238636; color: #fff; }
+    .res-E { background: #bb8009; color: #fff; }
+    .res-D { background: #da3633; color: #fff; }
+
+    /* ── Análise DKP — Cards de Confronto ───────────────────── */
+    .analise-info {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-left: 3px solid #388bfd;
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 18px;
+      font-size: .75rem;
+      color: #6e7681;
+      line-height: 1.6;
+    }
+    .analise-info strong { color: #8b949e; }
+
+    .analise-card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+    }
+
+    .analise-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 11px;
+    }
+    .analise-card-badges { display: flex; gap: 5px; align-items: center; }
+    .analise-hora { font-size: .76rem; color: #8b949e; font-weight: 600; }
+
+    .analise-matchup {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .analise-time { flex: 1; min-width: 0; }
+    .analise-time.right { text-align: right; }
+
+    .analise-time-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin-bottom: 5px;
+    }
+    .analise-time.right .analise-time-row { flex-direction: row-reverse; }
+
+    .analise-flag {
+      width: 26px;
+      height: 18px;
+      border-radius: 2px;
+      overflow: hidden;
+      background: #21262d;
+      flex-shrink: 0;
+    }
+    .analise-flag img { width: 100%; height: 100%; object-fit: cover; }
+
+    .analise-nome {
+      font-size: .86rem;
+      font-weight: 700;
+      color: #e6edf3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .analise-vs-center {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #30363d;
+      flex-shrink: 0;
+    }
+
+    /* Mini-barra de momento */
+    .momento-wrap { display: flex; align-items: center; gap: 5px; }
+    .analise-time.right .momento-wrap { flex-direction: row-reverse; }
+
+    .momento-bar-bg {
+      flex: 1;
+      height: 4px;
+      background: #21262d;
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .momento-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      width: 0;
+      transition: width .65s ease;
+    }
+    .momento-bom    { background: linear-gradient(90deg, #238636, #3fb950); }
+    .momento-neutro { background: linear-gradient(90deg, #bb8009, #d29922); }
+    .momento-fraco  { background: linear-gradient(90deg, #da3633, #f85149); }
+
+    .momento-val {
+      font-size: .67rem;
+      color: #6e7681;
+      width: 26px;
+      flex-shrink: 0;
+    }
+    .analise-time.right .momento-val { text-align: right; }
+
+    /* Seção de probabilidades inline */
+    .analise-probs {
+      border-top: 1px solid #21262d;
+      padding-top: 10px;
+      margin-top: 2px;
+    }
+    .analise-sem-dados {
+      text-align: center;
+      color: #484f58;
+      font-size: .77rem;
+      padding: 8px 0 4px;
+    }
+
+    /* Rodapé do card */
+    .analise-footer {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid #21262d;
+      font-size: .7rem;
+      color: #6e7681;
+      flex-wrap: wrap;
+    }
+    .confianca-badge {
+      padding: 2px 9px;
+      border-radius: 8px;
+      font-size: .69rem;
+      font-weight: 700;
+      background: #21262d;
+    }
+    .confianca-alta  { color: #3fb950; }
+    .confianca-media { color: #d29922; }
+    .confianca-baixa { color: #f85149; }
+
+    /* ── Confronto Modal ────────────────────────────────────── */
+    .confronto-subtitulo { font-size: .7rem; color: #8b949e; }
+    .confronto-data { font-size: .82rem; font-weight: 700; color: #e6edf3; margin-top: 2px; }
+
+    .confronto-teams {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 18px 0 20px;
+      border-bottom: 1px solid #21262d;
+      margin-bottom: 16px;
+    }
+
+    .confronto-time {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      min-width: 90px;
+    }
+
+    .confronto-flag-lg {
+      width: 54px;
+      height: 38px;
+      border-radius: 4px;
+      overflow: hidden;
+      background: #21262d;
+    }
+    .confronto-flag-lg img { width: 100%; height: 100%; object-fit: cover; }
+
+    .confronto-nome {
+      font-size: .88rem;
+      font-weight: 700;
+      color: #e6edf3;
+      text-align: center;
+    }
+
+    .confronto-vs-lg {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #30363d;
+      flex-shrink: 0;
+    }
+
+    .insuficiente-aviso {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #21262d;
+      border-radius: 8px;
+      padding: 14px 16px;
+      color: #8b949e;
+      font-size: .83rem;
+      margin-bottom: 14px;
+    }
+
+    .confronto-avisos { margin-top: 8px; padding-top: 8px; border-top: 1px solid #21262d; }
+    .confronto-aviso-item { font-size: .72rem; color: #6e7681; padding: 2px 0; }
+
+    /* ── Estados ─────────────────────────────────────────────── */
+    .loading { text-align: center; padding: 48px 20px; color: #8b949e; font-size: .88rem; }
+    .error   { text-align: center; padding: 28px 20px; color: #f85149; font-size: .83rem; }
+    .empty   { text-align: center; padding: 36px 20px; color: #484f58; font-size: .85rem; }
+
+    /* ── Botão Atualizar ─────────────────────────────────────── */
+    .refresh-btn {
+      position: fixed;
+      bottom: 22px;
+      right: 22px;
+      background: #f0b429;
+      color: #0d1117;
+      border: none;
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      font-size: 1.15rem;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,.4);
+      transition: transform .22s;
+      z-index: 50;
+    }
+    .refresh-btn:hover { transform: rotate(90deg) scale(1.1); }
+
+    /* ── Modal Largo (confronto) ─────────────────────────────── */
+    .modal-lg { max-width: 900px; width: 96%; }
+
+    /* ── Análise Lado a Lado ─────────────────────────────────── */
+    .analise-duo {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 620px) {
+      .analise-duo { grid-template-columns: 1fr; }
+    }
+
+    .analise-lado {
+      background: #21262d;
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+
+    .analise-lado-topo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #30363d;
+    }
+
+    .lado-section { margin-bottom: 12px; }
+    .lado-section-title {
+      font-size: .66rem;
+      color: #6e7681;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 6px;
+    }
+
+    /* ── Métricas com explicação ─────────────────────────────── */
+    .metric-row { margin-bottom: 10px; }
+    .metric-label-row {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 2px;
+    }
+    .metric-label {
+      font-size: .67rem;
+      color: #6e7681;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .metric-info-icon {
+      cursor: pointer;
+      color: #484f58;
+      font-size: .78rem;
+      line-height: 1;
+      user-select: none;
+      transition: color .15s;
+    }
+    .metric-info-icon:hover { color: #8b949e; }
+    .metric-val-row { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+    .metric-val { font-size: 1.25rem; font-weight: 700; color: #f0b429; }
+    .saiba-mais {
+      background: none;
+      border: none;
+      color: #388bfd;
+      cursor: pointer;
+      font-size: .67rem;
+      padding: 0;
+      line-height: 1.4;
+      transition: color .15s;
+    }
+    .saiba-mais:hover { color: #58a6ff; }
+
+    .metric-explain {
+      display: none;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-left: 2px solid #388bfd66;
+      border-radius: 0 5px 5px 5px;
+      padding: 7px 10px;
+      margin-top: 5px;
+      font-size: .71rem;
+      color: #8b949e;
+      line-height: 1.65;
+      text-align: left;
+      width: 100%;
+    }
+    .metric-explain.open { display: block; }
+    .metric-explain strong { color: #c9d1d9; }
+    .metric-formula {
+      display: inline-block;
+      font-family: 'Courier New', monospace;
+      background: #0d1117;
+      padding: 1px 6px;
+      border-radius: 3px;
+      color: #d2a8ff;
+      font-size: .69rem;
+    }
+    .meta-stat .saiba-mais { margin-top: 5px; align-self: center; }
+    .meta-stat .metric-explain { margin-top: 6px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-logo">⚽</div>
+  <div class="header-text">
+    <h1>DataKick</h1>
+    <p>Copa do Mundo 2026 — Painel de Análise em Tempo Real</p>
+  </div>
+  <span class="live-badge">● AO VIVO</span>
+</header>
+
+<nav class="view-nav">
+  <button class="view-tab active" onclick="trocarView('selecoes', this)">🏆 Seleções</button>
+  <button class="view-tab"        onclick="trocarView('proximos', this)">📅 Próximos Jogos</button>
+  <button class="view-tab"        onclick="trocarView('analise',  this)">⚔️ Análise DKP</button>
+  <button class="view-tab"        onclick="trocarView('grupos',   this)">📊 Grupos</button>
+</nav>
+
+<main>
+
+  <!-- ── View: Seleções ──────────────────────────────────────── -->
+  <div id="view-selecoes" class="view active">
+    <div class="conf-tabs" id="confTabs"></div>
+    <div id="selecoes-content"><div class="loading">⏳ Carregando seleções...</div></div>
+  </div>
+
+  <!-- ── View: Próximos Jogos ───────────────────────────────── -->
+  <div id="view-proximos" class="view">
+    <div id="proximos-content"><div class="loading">⏳ Carregando próximos jogos...</div></div>
+  </div>
+
+  <!-- ── View: Análise DKP ─────────────────────────────────── -->
+  <div id="view-analise" class="view">
+    <div id="analise-content"><div class="loading">⏳ Carregando análise...</div></div>
+  </div>
+
+  <!-- ── View: Grupos ──────────────────────────────────────── -->
+  <div id="view-grupos" class="view">
+    <div id="grupos-content"><div class="loading">⏳ Carregando classificação...</div></div>
+  </div>
+
+</main>
+
+<button class="refresh-btn" onclick="atualizarViewAtual()" title="Atualizar">↻</button>
+
+<div class="modal-overlay" id="modalOverlay" onclick="fecharModal(event)">
+  <div class="modal" id="modalContent">
+    <div class="loading">Calculando...</div>
+  </div>
+</div>
+
+<script>
+  // ── Mapa TLA → ISO 3166-1 alpha-2 (flagcdn.com) ───────────────
+  const iso2 = {
+    // CONMEBOL
+    URY:'uy', ARG:'ar', BRA:'br', ECU:'ec', COL:'co', PAR:'py', BOL:'bo', CHI:'cl',
+    // UEFA
+    GER:'de', ESP:'es', POR:'pt', ENG:'gb-eng', FRA:'fr', SUI:'ch', SWE:'se',
+    CZE:'cz', CRO:'hr', TUR:'tr', BEL:'be', AUT:'at', BIH:'ba', NED:'nl',
+    NOR:'no', SCO:'gb-sct',
+    // CAF
+    GHA:'gh', RSA:'za', ALG:'dz', TUN:'tn', SEN:'sn', MAR:'ma',
+    EGY:'eg', CPV:'cv', COD:'cd', CIV:'ci',
+    // CONCACAF
+    MEX:'mx', USA:'us', CAN:'ca', HAI:'ht', PAN:'pa', CUW:'cw',
+    // AFC
+    JPN:'jp', KOR:'kr', AUS:'au', KSA:'sa', IRN:'ir', QAT:'qa',
+    JOR:'jo', IRQ:'iq', UZB:'uz',
+    // OFC
+    NZL:'nz',
+  };
+
+  function flagSrc(tla)     { const c=iso2[tla]; return c?`https://flagcdn.com/40x30/${c}.png`:null; }
+  function flagImg(tla,cls) {
+    const s=flagSrc(tla);
+    if(!s) return `<span class="flag-tla">${tla||'?'}</span>`;
+    return `<img src="${s}" alt="${tla}" class="${cls}" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'flag-tla',textContent:'${tla}'}))">`;
+  }
+
+  // ── Estado global ──────────────────────────────────────────────
+  let dadosCopa        = null;
+  let confAtual        = 'Todas';
+  let viewAtual        = 'selecoes';
+  let partidasProximas = [];
+  let confrontosAnalise = [];
+  let standingsPorTla  = {};  // TLA → {j,v,e,d,gp,gc,sg,pts} da API de grupos
+
+  // ── Textos explicativos das métricas (fonte: documentacao_matematica.md) ──
+  const METRICS = {
+    confianca: {
+      oque: 'Mede o quanto o modelo confia na predição desta seleção, crescendo conforme ela acumula mais partidas no histórico.',
+      porque: 'Com poucos jogos os números são instáveis. A confiança "puxa" as probabilidades para o neutro (50%) quando os dados são escassos, evitando predições enganosas.',
+      como: '<span class="metric-formula">c(n) = 1 − e<sup>−0,12·n</sup></span> — com 5 jogos ≈ 45%, 10 jogos ≈ 70%, 30 jogos ≈ 97%. Nunca atinge 100%.',
+    },
+    aproveitamentoRecente: {
+      oque: 'Aproveitamento de pontos nos últimos 5 jogos na escala do futebol (vitória = 3, empate = 1, derrota = 0), normalizado pelo máximo possível.',
+      porque: 'É o principal preditor de curto prazo no DataKick Moment Index — captura o momentum atual e uma sequência recente de vitórias pesa mais que a média histórica.',
+      como: '<span class="metric-formula">A<sub>rec</sub> = (pts dos últimos 5 jogos) / 15</span> — 15 é o máximo possível (5 vitórias × 3 pts). Resultado em [0, 1].',
+    },
+    golsEsperados: {
+      oque: 'Média ponderada de gols marcados por jogo, dando peso exponencialmente maior aos jogos mais recentes.',
+      porque: 'Representa a intensidade ofensiva esperada. É o parâmetro λ da distribuição de Poisson que modela quantos gols a seleção tende a marcar.',
+      como: '<span class="metric-formula">λ = Σ w̃<sub>i</sub> · g<sub>i</sub></span> — pesos <span class="metric-formula">w̃<sub>i</sub> = e<sup>−0,18·(n−1−i)</sup></span> normalizados. O jogo mais recente vale quase o dobro do mais antigo.',
+    },
+  };
+
+  // ── Navegação entre views ──────────────────────────────────────
+  function trocarView(id, btn) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.querySelectorAll('.view-tab').forEach(b => b.classList.remove('active'));
+    document.getElementById('view-' + id).classList.add('active');
+    btn.classList.add('active');
+    viewAtual = id;
+    if (id === 'proximos' && !document.getElementById('proximos-content').dataset.loaded)
+      carregarProximos();
+    if (id === 'analise'  && !document.getElementById('analise-content').dataset.loaded)
+      carregarAnalise();
+    if (id === 'grupos'   && !document.getElementById('grupos-content').dataset.loaded)
+      carregarGrupos();
+  }
+
+  function atualizarViewAtual() {
+    if (viewAtual === 'selecoes') carregarCopa();
+    if (viewAtual === 'proximos') { document.getElementById('proximos-content').dataset.loaded=''; carregarProximos(); }
+    if (viewAtual === 'analise')  { document.getElementById('analise-content').dataset.loaded=''; carregarAnalise(); }
+    if (viewAtual === 'grupos')   { document.getElementById('grupos-content').dataset.loaded=''; carregarGrupos(); }
+  }
+
+  // ── VIEW: SELEÇÕES ─────────────────────────────────────────────
+  async function carregarCopa() {
+    try {
+      const resp = await fetch('/api/copa');
+      const json = await resp.json();
+      if (json.error) throw new Error('API: ' + json.error);
+      if (!json.confederacoes) throw new Error('Resposta inesperada');
+      dadosCopa = json;
+      renderConfTabs();
+      renderSelecoes(confAtual);
+    } catch(err) {
+      document.getElementById('selecoes-content').innerHTML =
+        `<div class="error">Erro ao carregar seleções.<br><small>${err.message}</small></div>`;
+    }
+  }
+
+  function renderConfTabs() {
+    const nomes = ['Todas', ...dadosCopa.confederacoes.map(c=>c.nome)];
+    document.getElementById('confTabs').innerHTML = nomes.map(n=>
+      `<button class="conf-tab${n===confAtual?' active':''}" onclick="selecionarConf('${n}')">${n}</button>`
+    ).join('');
+  }
+
+  function selecionarConf(nome) {
+    confAtual = nome;
+    document.querySelectorAll('.conf-tab').forEach(t=>t.classList.toggle('active', t.textContent===nome));
+    renderSelecoes(nome);
+  }
+
+  function renderSelecoes(filtro) {
+    const confs = filtro==='Todas'
+      ? dadosCopa.confederacoes
+      : dadosCopa.confederacoes.filter(c=>c.nome===filtro);
+    document.getElementById('selecoes-content').innerHTML = confs.map(conf=>`
+      <div class="section-header">
+        <h2>${conf.nome}</h2>
+        <span class="badge">${conf.selecoes.length} seleções</span>
+        <span class="badge">${conf.selecoes.reduce((s,t)=>s+t.partidas,0)} jogos</span>
+      </div>
+      <div class="team-grid">${conf.selecoes.map(cardSelecao).join('')}</div>
+    `).join('');
+  }
+
+  function cardSelecao(s) {
+    const temDados     = s.partidas > 0;
+    const st           = standingsPorTla[s.tla];
+    const temStandings = !temDados && st && st.j > 0;
+
+    const f   = flagImg(s.tla, 'flag-img');
+    const fsm = flagImg(s.tla, 'flag-img-sm');
+
+    let chips;
+    if (temDados) {
+      const total = s.vitorias + s.empates + s.derrotas || 1;
+      chips = `
+      <div class="team-stats">
+        <div class="stat-chip stat-v">${s.vitorias}V</div>
+        <div class="stat-chip stat-e">${s.empates}E</div>
+        <div class="stat-chip stat-d">${s.derrotas}D</div>
+      </div>
+      <div class="gols-line">${s.partidas} jogo${s.partidas>1?'s':''} · ⚽${s.golsPro} · 🥅${s.golsContra}</div>
+      <div class="stats-bar">
+        <div class="stats-bar-v" style="width:${s.vitorias/total*100}%"></div>
+        <div class="stats-bar-e" style="width:${s.empates/total*100}%"></div>
+        <div class="stats-bar-d" style="width:${s.derrotas/total*100}%"></div>
+      </div>`;
+    } else if (temStandings) {
+      const total = st.v + st.e + st.d || 1;
+      chips = `
+      <div class="team-stats">
+        <div class="stat-chip stat-v">${st.v}V</div>
+        <div class="stat-chip stat-e">${st.e}E</div>
+        <div class="stat-chip stat-d">${st.d}D</div>
+      </div>
+      <div class="gols-line">${st.j} jogo${st.j>1?'s':''} · ⚽${st.gp} · 🥅${st.gc}</div>
+      <div class="stats-bar">
+        <div class="stats-bar-v" style="width:${st.v/total*100}%"></div>
+        <div class="stats-bar-e" style="width:${st.e/total*100}%"></div>
+        <div class="stats-bar-d" style="width:${st.d/total*100}%"></div>
+      </div>`;
+    } else {
+      chips = `<div class="no-data">Aguardando partidas da Copa</div>`;
+    }
+
+    const btnClass = temDados ? ' has-data' : temStandings ? ' api-data' : '';
+    const btnLabel = temDados ? 'Predição DKP' : temStandings ? 'Sincronize para DKP' : 'Sem dados ainda';
+
+    return `
+      <div class="team-card" onclick="verPredicao(${s.id},'${s.nome}','${s.tla}')">
+        <div class="team-header">
+          <div class="team-flag">${f}</div>
+          <div class="team-info">
+            <h3>${s.nome}</h3>
+            <div class="team-flag-sm">${fsm}</div>
+          </div>
+        </div>
+        ${chips}
+        <button class="predict-btn${btnClass}"
+                onclick="event.stopPropagation();verPredicao(${s.id},'${s.nome}','${s.tla}')">
+          🔮 ${btnLabel}
+        </button>
+      </div>`;
+  }
+
+  // ── VIEW: PRÓXIMOS JOGOS ───────────────────────────────────────
+  async function carregarProximos() {
+    const el = document.getElementById('proximos-content');
+    el.innerHTML = '<div class="loading">⏳ Buscando próximos jogos...</div>';
+    try {
+      const resp = await fetch('/api/proximos');
+      const json = await resp.json();
+      if (json.error) throw new Error(json.error);
+      el.dataset.loaded = '1';
+      renderProximos(json.partidas || []);
+    } catch(err) {
+      el.innerHTML = `<div class="error">Erro ao carregar jogos.<br><small>${err.message}</small></div>`;
+    }
+  }
+
+  function renderProximos(partidas) {
+    partidasProximas = partidas;
+    const el = document.getElementById('proximos-content');
+    if (!partidas.length) {
+      el.innerHTML = '<div class="empty">📅 Nenhum jogo agendado nos próximos 7 dias.</div>';
+      return;
+    }
+
+    // Agrupa por data mantendo o índice global
+    const porData = {};
+    for (let i = 0; i < partidas.length; i++) {
+      const p = partidas[i];
+      const dia = p.dataBrt.substring(0, 10);
+      (porData[dia] = porData[dia] || []).push({p, i});
+    }
+
+    const diaSemana = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+    const mes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+    el.innerHTML = Object.entries(porData).map(([dia, items]) => {
+      const d = new Date(dia + 'T12:00:00');
+      const label = `${diaSemana[d.getDay()]}, ${d.getDate()} de ${mes[d.getMonth()]}`;
+      return `
+        <div class="matches-day">
+          <div class="day-header">${label} · ${items.length} jogo${items.length>1?'s':''}</div>
+          ${items.map(({p, i}) => cardPartida(p, i)).join('')}
+        </div>`;
+    }).join('');
+  }
+
+  function cardPartida(p, idx) {
+    const hora   = p.dataBrt.substring(11, 16);
+    const fCasa  = flagImg(p.casa.tla, 'flag-img');
+    const fFora  = flagImg(p.fora.tla, 'flag-img');
+    const grupo  = p.grupo ? `<span class="match-grupo">${p.grupo}</span>` : '';
+    return `
+      <div class="match-card" onclick="verConfronto(${idx})">
+        <div class="match-time">${hora}<br><small>BRT</small></div>
+        <div class="match-teams">
+          <div class="match-team">
+            <div class="match-flag">${fCasa}</div>
+            ${p.casa.nome}
+          </div>
+          <span class="match-vs">×</span>
+          <div class="match-team away">
+            <div class="match-flag">${fFora}</div>
+            ${p.fora.nome}
+          </div>
+        </div>
+        <div class="match-meta">
+          <span class="match-stage">${p.fase}</span>
+          ${grupo}
+        </div>
+      </div>`;
+  }
+
+  // ── VIEW: ANÁLISE DKP ─────────────────────────────────────────
+  async function carregarAnalise() {
+    const el = document.getElementById('analise-content');
+    el.innerHTML = '<div class="loading">⚙️ Calculando DataKick Moment Index para todos os confrontos...</div>';
+    try {
+      const resp = await fetch('/api/confrontos');
+      const json = await resp.json();
+      if (json.error) throw new Error(json.error);
+      el.dataset.loaded = '1';
+      renderAnalise(json.confrontos || []);
+    } catch(err) {
+      el.innerHTML = `<div class="error">Erro ao carregar análise.<br><small>${err.message}</small></div>`;
+    }
+  }
+
+  function renderAnalise(confrontos) {
+    confrontosAnalise = confrontos;
+    const el = document.getElementById('analise-content');
+    if (!confrontos.length) {
+      el.innerHTML = '<div class="empty">⚔️ Nenhum confronto agendado.</div>';
+      return;
+    }
+
+    // Agrupa por data
+    const porData = {};
+    for (const c of confrontos) {
+      const dia = c.dataBrt.substring(0, 10);
+      (porData[dia] = porData[dia] || []).push(c);
+    }
+    const diaSemana = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+    const mes       = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+    const total    = confrontos.length;
+    const comDados = confrontos.filter(c => !c.semDados).length;
+
+    el.innerHTML = `
+      <div class="section-header" style="margin-bottom:14px">
+        <h2>Análise DKP — Confrontos Agendados</h2>
+        <span class="badge">${total} jogos</span>
+        ${comDados > 0 ? `<span class="badge" style="color:#3fb950">${comDados} com dados</span>` : ''}
+      </div>
+
+      <div class="analise-info">
+        <strong>DataKick Moment Index (DMI)</strong> — índice de momento de cada seleção combinando:
+        forma recente <strong>35%</strong> · probabilidade DKP (Markov+Bayesian) <strong>35%</strong> ·
+        poder ofensivo <strong>20%</strong> · solidez defensiva <strong>10%</strong>.
+        Diferença de DMI é convertida em probabilidades via regressão logística (k=6).
+        Times sem histórico ficam em DMI=50% (neutro). Confiança cresce com o número de partidas.
+      </div>
+
+      ${Object.entries(porData).map(([dia, items]) => {
+        const d = new Date(dia + 'T12:00:00');
+        const label = `${diaSemana[d.getDay()]}, ${d.getDate()} de ${mes[d.getMonth()]}`;
+        return `
+          <div class="matches-day">
+            <div class="day-header">${label} · ${items.length} jogo${items.length>1?'s':''}</div>
+            ${items.map(cardAnalise).join('')}
+          </div>`;
+      }).join('')}`;
+
+    // Anima barras de probabilidade e de momento
+    setTimeout(() => {
+      document.querySelectorAll('#view-analise .prob-bar-fill, .momento-bar-fill').forEach(el => {
+        el.style.width = el.dataset.w;
+      });
+    }, 60);
+  }
+
+  function cardAnalise(c) {
+    const hora   = c.dataBrt.substring(11, 16);
+    const grupo  = c.grupo ? `<span class="match-grupo">${c.grupo}</span>` : '';
+    const fCasa  = flagImg(c.casa.tla, 'flag-img');
+    const fFora  = flagImg(c.fora.tla, 'flag-img');
+
+    // Classe de cor do momento: bom (>55%), neutro (45-55%), fraco (<45%)
+    function mClass(m) { return m > 0.55 ? 'momento-bom' : m < 0.45 ? 'momento-fraco' : 'momento-neutro'; }
+
+    // Confiança geral do confronto
+    const conf = c.confiancaGeral;
+    let confClass, confLabel;
+    if (c.semDados) {
+      confClass = 'confianca-baixa'; confLabel = 'Sem dados';
+    } else if (conf < 0.35) {
+      confClass = 'confianca-baixa'; confLabel = `Conf: ${(conf*100).toFixed(0)}% · amostra insuficiente`;
+    } else if (conf < 0.70) {
+      confClass = 'confianca-media'; confLabel = `Conf: ${(conf*100).toFixed(0)}%`;
+    } else {
+      confClass = 'confianca-alta';  confLabel = `Conf: ${(conf*100).toFixed(0)}%`;
+    }
+
+    // Seção de probabilidades
+    const probsHtml = c.semDados
+      ? `<div class="analise-probs"><div class="analise-sem-dados">⏳ Aguardando dados da Copa 2026</div></div>`
+      : `<div class="analise-probs">
+           ${barraConfronto(c.casa.nome + ' vence', c.probCasa,   'bar-v')}
+           ${barraConfronto('Empate',               c.probEmpate, 'bar-e')}
+           ${barraConfronto(c.fora.nome + ' vence', c.probFora,   'bar-fora')}
+         </div>`;
+
+    return `
+      <div class="analise-card">
+        <div class="analise-card-header">
+          <div class="analise-card-badges">
+            <span class="match-stage">${c.fase}</span>
+            ${grupo}
+          </div>
+          <span class="analise-hora">${hora} BRT</span>
+        </div>
+
+        <div class="analise-matchup">
+          <!-- Time da casa -->
+          <div class="analise-time">
+            <div class="analise-time-row">
+              <div class="analise-flag">${fCasa}</div>
+              <span class="analise-nome">${c.casa.nome}</span>
+            </div>
+            <div class="momento-wrap">
+              <div class="momento-bar-bg">
+                <div class="momento-bar-fill ${mClass(c.casa.momento)}"
+                     style="width:0" data-w="${(c.casa.momento*100).toFixed(0)}%"></div>
+              </div>
+              <span class="momento-val">${(c.casa.momento*100).toFixed(0)}%</span>
+            </div>
+          </div>
+
+          <span class="analise-vs-center">×</span>
+
+          <!-- Time visitante (espelhado) -->
+          <div class="analise-time right">
+            <div class="analise-time-row">
+              <span class="analise-nome">${c.fora.nome}</span>
+              <div class="analise-flag">${fFora}</div>
+            </div>
+            <div class="momento-wrap">
+              <span class="momento-val">${(c.fora.momento*100).toFixed(0)}%</span>
+              <div class="momento-bar-bg">
+                <div class="momento-bar-fill ${mClass(c.fora.momento)}"
+                     style="width:0" data-w="${(c.fora.momento*100).toFixed(0)}%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        ${probsHtml}
+
+        <div class="analise-footer">
+          <span class="confianca-badge ${confClass}">${confLabel}</span>
+          <span>·</span>
+          <span>${c.casa.totalPartidas}p ${c.casa.nome} · ${c.fora.totalPartidas}p ${c.fora.nome}</span>
+        </div>
+      </div>`;
+  }
+
+  // ── VIEW: GRUPOS ───────────────────────────────────────────────
+  function atualizarStandingsPorTla(grupos) {
+    standingsPorTla = {};
+    for (const g of grupos) {
+      for (const t of (g.times || [])) {
+        standingsPorTla[t.tla] = t;
+      }
+    }
+  }
+
+  async function carregarGruposBackground() {
+    try {
+      const resp = await fetch('/api/grupos');
+      const json = await resp.json();
+      if (json.error || !json.grupos) return;
+      atualizarStandingsPorTla(json.grupos);
+      // Re-renderiza os cards de seleções se a view já estiver carregada
+      if (dadosCopa) renderSelecoes(confAtual);
+    } catch(_) { /* silencioso — não bloqueia a UI */ }
+  }
+
+  async function carregarGrupos() {
+    const el = document.getElementById('grupos-content');
+    el.innerHTML = '<div class="loading">⏳ Carregando classificação...</div>';
+    try {
+      const resp = await fetch('/api/grupos');
+      const json = await resp.json();
+      if (json.error) throw new Error(json.error);
+      el.dataset.loaded = '1';
+      atualizarStandingsPorTla(json.grupos || []);
+      if (dadosCopa) renderSelecoes(confAtual);
+      renderGrupos(json.grupos || []);
+    } catch(err) {
+      el.innerHTML = `<div class="error">Erro ao carregar grupos.<br><small>${err.message}</small></div>`;
+    }
+  }
+
+  function renderGrupos(grupos) {
+    const el = document.getElementById('grupos-content');
+    if (!grupos.length) {
+      el.innerHTML = '<div class="empty">📊 Classificação ainda não disponível.</div>';
+      return;
+    }
+    el.innerHTML = `
+      <div class="section-header">
+        <h2>Classificação por Grupo</h2>
+        <span class="badge">${grupos.length} grupos</span>
+        <span class="badge" style="color:#3fb950">2 primeiros se classificam</span>
+      </div>
+      <div class="grupos-grid">${grupos.map(cardGrupo).join('')}</div>`;
+  }
+
+  function cardGrupo(grupo) {
+    const linhas = grupo.times.map((t, i) => {
+      const cl  = i < 2 ? 'classificado' : '';
+      const sgCl = t.sg > 0 ? 'sg-pos' : t.sg < 0 ? 'sg-neg' : '';
+      const sgStr = t.sg > 0 ? '+' + t.sg : t.sg;
+      return `
+        <tr class="${cl}">
+          <td>${t.pos}</td>
+          <td>
+            <div class="grupo-flag">${flagImg(t.tla,'flag-img')}</div>
+            ${t.nome}
+          </td>
+          <td>${t.j}</td>
+          <td>${t.v}</td>
+          <td>${t.e}</td>
+          <td>${t.d}</td>
+          <td class="${sgCl}">${sgStr}</td>
+          <td class="pts-cell">${t.pts}</td>
+        </tr>`;
+    }).join('');
+
+    return `
+      <div class="grupo-card">
+        <div class="grupo-title">${grupo.nome}</div>
+        <table class="grupo-table">
+          <thead>
+            <tr>
+              <th>#</th><th>Seleção</th>
+              <th>J</th><th>V</th><th>E</th><th>D</th><th>SG</th><th>Pts</th>
+            </tr>
+          </thead>
+          <tbody>${linhas}</tbody>
+        </table>
+      </div>`;
+  }
+
+  // ── MODAL PREDIÇÃO DKP ─────────────────────────────────────────
+  async function verPredicao(id, nome, tla) {
+    const overlay = document.getElementById('modalOverlay');
+    const mc      = document.getElementById('modalContent');
+    const flagHtml = `<div class="modal-title-flag">${flagImg(tla,'flag-img')}</div>`;
+
+    overlay.classList.add('open');
+    mc.innerHTML = '<div class="loading">⚙️ Calculando predição DKP...</div>';
+
+    try {
+      const resp = await fetch(`/api/predicao/${id}`);
+      const d    = await resp.json();
+
+      if (d.error || d.totalPartidas === 0) {
+        const st = standingsPorTla[tla];
+        const jogosApi = st ? st.j : 0;
+        mc.innerHTML = `
+          <div class="modal-header">
+            <span class="modal-title">${flagHtml}${nome}</span>
+            <button class="modal-close" onclick="fecharModal()">×</button>
+          </div>
+          <div style="text-align:center;padding:34px 16px;color:#8b949e">
+            <div style="font-size:1.8rem;margin-bottom:10px">${jogosApi > 0 ? '📊' : '⏳'}</div>
+            ${jogosApi > 0
+              ? `<strong style="color:#d29922">${jogosApi} jogo${jogosApi>1?'s':''} disputado${jogosApi>1?'s':''} na Copa 2026</strong><br>
+                 <small>Sincronize os dados para ativar a predição DKP.</small>`
+              : `Sem partidas sincronizadas.<br>
+                 <small>Aguarde os jogos da Copa 2026.</small>`}
+          </div>`;
+        return;
+      }
+
+      mc.innerHTML = `
+        <div class="modal-header">
+          <span class="modal-title">
+            ${flagHtml}${d.selecao}
+            <span style="font-size:.77rem;color:#8b949e;font-weight:400">· DKP</span>
+          </span>
+          <button class="modal-close" onclick="fecharModal()">×</button>
+        </div>
+
+        <div class="verdict">${d.veredicto}</div>
+
+        <div class="meta-stats">
+          <div class="meta-stat">
+            <div class="meta-stat-val">${(d.confianca*100).toFixed(0)}%</div>
+            <div class="meta-stat-lbl">Confiança <span class="metric-info-icon" onclick="toggleExplain('pdkp-conf')">ⓘ</span></div>
+            <button class="saiba-mais" data-explain="pdkp-conf" onclick="toggleExplain('pdkp-conf')">Saiba mais ▾</button>
+            <div class="metric-explain" id="pdkp-conf">
+              <strong>O que é:</strong> ${METRICS.confianca.oque}<br>
+              <strong>Por que:</strong> ${METRICS.confianca.porque}<br>
+              <strong>Como:</strong> ${METRICS.confianca.como}
+            </div>
+          </div>
+          <div class="meta-stat">
+            <div class="meta-stat-val">${(d.aproveitamento*100).toFixed(0)}%</div>
+            <div class="meta-stat-lbl">Aproveitamento recente <span class="metric-info-icon" onclick="toggleExplain('pdkp-forma')">ⓘ</span></div>
+            <button class="saiba-mais" data-explain="pdkp-forma" onclick="toggleExplain('pdkp-forma')">Saiba mais ▾</button>
+            <div class="metric-explain" id="pdkp-forma">
+              <strong>O que é:</strong> ${METRICS.aproveitamentoRecente.oque}<br>
+              <strong>Por que:</strong> ${METRICS.aproveitamentoRecente.porque}<br>
+              <strong>Como:</strong> ${METRICS.aproveitamentoRecente.como}
+            </div>
+          </div>
+          <div class="meta-stat">
+            <div class="meta-stat-val">${d.golsEsperados.toFixed(1)}</div>
+            <div class="meta-stat-lbl">Gols esperados <span class="metric-info-icon" onclick="toggleExplain('pdkp-gols')">ⓘ</span></div>
+            <button class="saiba-mais" data-explain="pdkp-gols" onclick="toggleExplain('pdkp-gols')">Saiba mais ▾</button>
+            <div class="metric-explain" id="pdkp-gols">
+              <strong>O que é:</strong> ${METRICS.golsEsperados.oque}<br>
+              <strong>Por que:</strong> ${METRICS.golsEsperados.porque}<br>
+              <strong>Como:</strong> ${METRICS.golsEsperados.como}
+            </div>
+          </div>
+          <div class="meta-stat">
+            <div class="meta-stat-val">${d.totalPartidas}</div>
+            <div class="meta-stat-lbl">Partidas</div>
+          </div>
+        </div>
+
+        <div class="prob-section">
+          <h4>Probabilidades — Próximo Jogo</h4>
+          ${barraProb('Vitória',d.probVitoria,'bar-v')}
+          ${barraProb('Empate', d.probEmpate, 'bar-e')}
+          ${barraProb('Derrota',d.probDerrota,'bar-d')}
+        </div>
+
+        <div class="gols-summary">
+          <div class="gols-item">
+            <span class="gols-icon">⚽</span>
+            <div>
+              <div class="gols-total">${d.totalGolsPro ?? 0}</div>
+              <div class="gols-lbl">Gols marcados</div>
+              ${d.totalPartidas > 0
+                ? `<div class="gols-media">Média: ${(d.totalGolsPro / d.totalPartidas).toFixed(1)} por jogo</div>`
+                : ''}
+            </div>
+          </div>
+          <div class="gols-item">
+            <span class="gols-icon">🥅</span>
+            <div>
+              <div class="gols-total">${d.totalGolsContra ?? 0}</div>
+              <div class="gols-lbl">Gols sofridos</div>
+              ${d.totalPartidas > 0
+                ? `<div class="gols-media">Média: ${(d.totalGolsContra / d.totalPartidas).toFixed(1)} por jogo</div>`
+                : ''}
+            </div>
+          </div>
+        </div>
+
+        ${d.ultimasPartidas&&d.ultimasPartidas.length?`
+        <div class="matches-section">
+          <h4>Últimas Partidas</h4>
+          ${d.ultimasPartidas.map(m=>`
+            <div class="match-row">
+              <span class="match-date">${m.data.substring(5)}</span>
+              <span class="match-adv">${m.adversario}</span>
+              <span class="match-score">${m.golsPro}×${m.golsContra}</span>
+              <span class="res-badge res-${m.resultado}">${m.resultado}</span>
+            </div>`).join('')}
+        </div>`:''}`;
+
+      setTimeout(()=>{
+        document.querySelectorAll('.prob-bar-fill').forEach(el=>{ el.style.width=el.dataset.w; });
+      }, 60);
+
+    } catch(err) {
+      mc.innerHTML = `<div class="error">Erro: ${err.message}</div>`;
+    }
+  }
+
+  // ── Helpers de Renderização ────────────────────────────────────
+  function barraProb(label, valor, classe) {
+    const pct=(valor*100).toFixed(1);
+    return `
+      <div class="prob-row">
+        <span class="prob-label">${label}</span>
+        <div class="prob-bar-bg">
+          <div class="prob-bar-fill ${classe}" style="width:0" data-w="${pct}%"></div>
+        </div>
+        <span class="prob-pct">${pct}%</span>
+      </div>`;
+  }
+
+
+  // ── MODAL CONFRONTO ───────────────────────────────────────────
+  function selecaoPorTla(tla) {
+    if (!dadosCopa) return null;
+    for (const conf of dadosCopa.confederacoes)
+      for (const s of conf.selecoes)
+        if (s.tla === tla) return s;
+    return null;
+  }
+
+  async function fetchPred(id) {
+    try {
+      const resp = await fetch(`/api/predicao/${id}`);
+      const d = await resp.json();
+      if (d.error || !d.totalPartidas) return null;
+      return d;
+    } catch { return null; }
+  }
+
+  function barraConfronto(label, valor, classe) {
+    const pct = (valor * 100).toFixed(1);
+    return `
+      <div class="prob-row">
+        <span class="prob-label-lg">${label}</span>
+        <div class="prob-bar-bg">
+          <div class="prob-bar-fill ${classe}" style="width:0" data-w="${pct}%"></div>
+        </div>
+        <span class="prob-pct">${pct}%</span>
+      </div>`;
+  }
+
+  // ── Helpers: explicações de métricas ───────────────────────────
+  function toggleExplain(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.toggle('open');
+    const btn = document.querySelector(`[data-explain="${id}"]`);
+    if (btn) btn.textContent = el.classList.contains('open') ? 'Fechar ▲' : 'Saiba mais ▾';
+  }
+
+  function metricBlock(label, valor, explainKey, uid) {
+    const m = METRICS[explainKey];
+    const explainHtml = m ? `
+      <button class="saiba-mais" data-explain="${uid}" onclick="toggleExplain('${uid}')">Saiba mais ▾</button>
+      <div class="metric-explain" id="${uid}">
+        <strong>O que é:</strong> ${m.oque}<br>
+        <strong>Por que:</strong> ${m.porque}<br>
+        <strong>Como:</strong> ${m.como}
+      </div>` : '';
+    return `
+      <div class="metric-row">
+        <div class="metric-label-row">
+          <span class="metric-label">${label}</span>
+          ${m ? `<span class="metric-info-icon" onclick="toggleExplain('${uid}')">ⓘ</span>` : ''}
+        </div>
+        <div class="metric-val-row">
+          <span class="metric-val">${valor}</span>
+          ${explainHtml}
+        </div>
+      </div>`;
+  }
+
+  function renderAnalyticsSide(pred, nome, tla, side) {
+    const flag = flagImg(tla, 'flag-img');
+    let conteudo;
+    if (!pred) {
+      const st = standingsPorTla[tla];
+      const jogosApi = st ? st.j : 0;
+      conteudo = jogosApi > 0
+        ? `<div style="text-align:center;padding:14px 8px">
+             <div style="font-size:1.3rem;margin-bottom:6px">📊</div>
+             <div style="font-size:.82rem;color:#d29922;font-weight:600">${jogosApi} jogo${jogosApi>1?'s':''} na Copa 2026</div>
+             <div style="font-size:.71rem;color:#6e7681;margin-top:4px">Sincronize para análise DKP</div>
+           </div>`
+        : `<div class="insuficiente-aviso" style="flex-direction:column;gap:5px;align-items:flex-start">
+             <div style="font-size:1.2rem">⏳</div>
+             <div>Sem dados disponíveis<br><small style="color:#6e7681">Aguardando partidas da Copa 2026</small></div>
+           </div>`;
+    } else {
+      const insuf = pred.totalPartidas < 3;
+      const mediaPro    = pred.totalPartidas > 0 ? (pred.totalGolsPro    / pred.totalPartidas).toFixed(1) : '—';
+      const mediaContra = pred.totalPartidas > 0 ? (pred.totalGolsContra / pred.totalPartidas).toFixed(1) : '—';
+      const avisoHtml   = insuf
+        ? `<div style="font-size:.68rem;color:#d29922;margin-bottom:9px">⚠️ Amostra insuficiente (${pred.totalPartidas} jogo${pred.totalPartidas>1?'s':''})</div>`
+        : '';
+
+      conteudo = `
+        ${avisoHtml}
+        <div class="lado-section">
+          ${metricBlock('Confiança',       (pred.confianca*100).toFixed(0)+'%',  'confianca',    'conf-'+side)}
+          ${metricBlock('Aproveitamento recente',   (pred.aproveitamento*100).toFixed(0)+'%', 'aproveitamentoRecente', 'forma-'+side)}
+          ${metricBlock('Gols esperados',  pred.golsEsperados.toFixed(1),        'golsEsperados','gols-'+side)}
+          <div class="metric-row">
+            <div class="metric-label-row"><span class="metric-label">Partidas</span></div>
+            <div class="metric-val-row"><span class="metric-val">${pred.totalPartidas}</span></div>
+          </div>
+        </div>
+
+        <div class="lado-section">
+          <div class="lado-section-title">Probabilidades — Próximo Jogo</div>
+          ${barraProb('Vitória', pred.probVitoria, 'bar-v')}
+          ${barraProb('Empate',  pred.probEmpate,  'bar-e')}
+          ${barraProb('Derrota', pred.probDerrota, 'bar-d')}
+        </div>
+
+        <div class="lado-section">
+          <div class="lado-section-title">Gols</div>
+          <div style="display:flex;gap:8px">
+            <div style="flex:1;background:#161b22;border-radius:7px;padding:8px 10px;text-align:center">
+              <div style="font-size:1.4rem;font-weight:700;color:#e6edf3">⚽ ${pred.totalGolsPro ?? 0}</div>
+              <div style="font-size:.64rem;color:#6e7681;text-transform:uppercase;letter-spacing:.04em">Marcados</div>
+              <div style="font-size:.66rem;color:#484f58">⌀ ${mediaPro}/jogo</div>
+            </div>
+            <div style="flex:1;background:#161b22;border-radius:7px;padding:8px 10px;text-align:center">
+              <div style="font-size:1.4rem;font-weight:700;color:#e6edf3">🥅 ${pred.totalGolsContra ?? 0}</div>
+              <div style="font-size:.64rem;color:#6e7681;text-transform:uppercase;letter-spacing:.04em">Sofridos</div>
+              <div style="font-size:.66rem;color:#484f58">⌀ ${mediaContra}/jogo</div>
+            </div>
+          </div>
+        </div>
+
+        ${pred.ultimasPartidas && pred.ultimasPartidas.length ? `
+        <div class="lado-section" style="margin-bottom:0">
+          <div class="lado-section-title">Últimas Partidas</div>
+          ${pred.ultimasPartidas.map(m=>`
+            <div class="match-row">
+              <span class="match-date">${m.data.substring(5)}</span>
+              <span class="match-adv">${m.adversario}</span>
+              <span class="match-score">${m.golsPro}×${m.golsContra}</span>
+              <span class="res-badge res-${m.resultado}">${m.resultado}</span>
+            </div>`).join('')}
+        </div>` : ''}`;
+    }
+
+    return `
+      <div class="analise-lado">
+        <div class="analise-lado-topo">
+          <div class="confronto-flag-lg">${flag}</div>
+          <span class="analise-nome" style="font-size:.95rem">${nome}</span>
+        </div>
+        ${conteudo}
+      </div>`;
+  }
+
+  async function verConfronto(idx) {
+    const p       = partidasProximas[idx];
+    const overlay = document.getElementById('modalOverlay');
+    const mc      = document.getElementById('modalContent');
+    overlay.classList.add('open');
+    mc.classList.add('modal-lg');
+    mc.innerHTML = '<div class="loading">⚙️ Buscando análise completa...</div>';
+
+    // Formata data
+    const dia  = p.dataBrt.substring(0, 10);
+    const hora = p.dataBrt.substring(11, 16);
+    const dObj = new Date(dia + 'T12:00:00');
+    const DS   = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+    const MS   = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const dataStr = `${DS[dObj.getDay()]}, ${dObj.getDate()} ${MS[dObj.getMonth()]} · ${hora} BRT`;
+
+    const fCasa = flagImg(p.casa.tla, 'flag-img');
+    const fFora = flagImg(p.fora.tla, 'flag-img');
+
+    // Busca predições dos dois times em paralelo
+    const selCasa = selecaoPorTla(p.casa.tla);
+    const selFora = selecaoPorTla(p.fora.tla);
+    const [predCasa, predFora] = await Promise.all([
+      selCasa ? fetchPred(selCasa.id) : Promise.resolve(null),
+      selFora ? fetchPred(selFora.id) : Promise.resolve(null),
+    ]);
+
+    // Probabilidades combinadas do confronto
+    let probsHtml = '';
+    if (!predCasa && !predFora) {
+      const stC = standingsPorTla[p.casa.tla];
+      const stF = standingsPorTla[p.fora.tla];
+      const algumJogou = (stC && stC.j > 0) || (stF && stF.j > 0);
+      probsHtml = `
+        <div class="insuficiente-aviso">
+          <span style="font-size:1.4rem">${algumJogou ? '📊' : '⏳'}</span>
+          <div>${algumJogou
+            ? `Partidas registradas — sincronize para ver probabilidades DKP.`
+            : `Sem dados disponíveis<br><small>Aguardando partidas da Copa 2026</small>`}
+          </div>
+        </div>`;
+    } else {
+      const pCV = predCasa ? predCasa.probVitoria : 1/3;
+      const pCE = predCasa ? predCasa.probEmpate  : 1/3;
+      const pFV = predFora ? predFora.probVitoria : 1/3;
+      const pFE = predFora ? predFora.probEmpate  : 1/3;
+      const rC  = pCV, rE = (pCE + pFE) / 2, rF = pFV;
+      const tot = rC + rE + rF;
+      const pC  = rC / tot, pE = rE / tot, pF = rF / tot;
+
+      const avisos = [];
+      if (!predCasa)                        avisos.push(`Sem dados para ${p.casa.nome}`);
+      else if (predCasa.totalPartidas < 3)  avisos.push(`${p.casa.nome}: ${predCasa.totalPartidas} jogo${predCasa.totalPartidas>1?'s':''} — amostra insuficiente`);
+      if (!predFora)                        avisos.push(`Sem dados para ${p.fora.nome}`);
+      else if (predFora.totalPartidas < 3)  avisos.push(`${p.fora.nome}: ${predFora.totalPartidas} jogo${predFora.totalPartidas>1?'s':''} — amostra insuficiente`);
+
+      probsHtml = `
+        <div class="prob-section">
+          <h4>Probabilidades do Confronto</h4>
+          ${barraConfronto(p.casa.nome + ' vence', pC, 'bar-v')}
+          ${barraConfronto('Empate',               pE, 'bar-e')}
+          ${barraConfronto(p.fora.nome + ' vence', pF, 'bar-fora')}
+        </div>
+        ${avisos.length ? `<div class="confronto-avisos">${avisos.map(a=>`<div class="confronto-aviso-item">⚠️ ${a}</div>`).join('')}</div>` : ''}`;
+    }
+
+    mc.innerHTML = `
+      <div class="modal-header">
+        <div>
+          <div class="confronto-subtitulo">${p.fase}${p.grupo ? ' · ' + p.grupo : ''}</div>
+          <div class="confronto-data">${dataStr}</div>
+        </div>
+        <button class="modal-close" onclick="fecharModal()">×</button>
+      </div>
+
+      <div class="confronto-teams">
+        <div class="confronto-time">
+          <div class="confronto-flag-lg">${fCasa}</div>
+          <div class="confronto-nome">${p.casa.nome}</div>
+        </div>
+        <div class="confronto-vs-lg">×</div>
+        <div class="confronto-time">
+          <div class="confronto-flag-lg">${fFora}</div>
+          <div class="confronto-nome">${p.fora.nome}</div>
+        </div>
+      </div>
+
+      <div class="analise-duo">
+        ${renderAnalyticsSide(predCasa, p.casa.nome, p.casa.tla, 'casa')}
+        ${renderAnalyticsSide(predFora, p.fora.nome, p.fora.tla, 'fora')}
+      </div>
+
+      ${probsHtml}`;
+
+    setTimeout(() => {
+      document.querySelectorAll('#modalContent .prob-bar-fill').forEach(el => { el.style.width = el.dataset.w; });
+    }, 60);
+  }
+
+  // ── Fechar Modal ───────────────────────────────────────────────
+  function fecharModal(e) {
+    const o=document.getElementById('modalOverlay');
+    if(!e||e.target===o) {
+      o.classList.remove('open');
+      document.getElementById('modalContent').classList.remove('modal-lg');
+    }
+  }
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape') fecharModal(); });
+
+  // ── Inicialização ──────────────────────────────────────────────
+  carregarCopa();
+  carregarGruposBackground();
+  setInterval(carregarCopa, 60_000);
+  setInterval(carregarGruposBackground, 60_000);
+</script>
+
+</body>
+</html>
