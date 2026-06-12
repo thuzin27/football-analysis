@@ -9,6 +9,11 @@
 ## Sumário
 
 1. [Parte 1 — Banco de Dados e Integração com a API](#parte-1)
+   - 1.1 Modelo Relacional
+   - 1.2 Gerenciamento de Conexões — HikariCP
+   - 1.3 Integração com a API football-data.org
+   - 1.4 Estrutura de Dados em Memória — B-Tree
+   - 1.5 Sincronização Automática (Auto-Sync)
 2. [Parte 2 — Algoritmo de Busca: Interpolation Search](#parte-2)
 3. [Parte 3 — Algoritmo de Análise: DataKick Predictor (DKP)](#parte-3)
 4. [Perguntas que o professor pode fazer](#perguntas)
@@ -99,12 +104,15 @@ Esse modelo é chamado de *API Key Authentication* — mais simples que OAuth 2.
 
 **Endpoints utilizados:**
 
-| Endpoint | Dado retornado |
-|---|---|
-| `GET /v4/competitions/WC/standings` | Classificação por grupo |
-| `GET /v4/competitions/WC/matches?status=SCHEDULED` | Próximas partidas agendadas |
+| Endpoint | Dado retornado | Cache |
+|---|---|---|
+| `GET /v4/competitions/WC/standings` | Classificação por grupo + `team.id` de cada seleção | 5 min |
+| `GET /v4/competitions/WC/matches?status=SCHEDULED` | Próximas partidas agendadas | 5 min |
+| `GET /v4/competitions/WC/teams` | Lista de todas as 48 seleções da Copa (usada no sync em massa) | sem cache |
+| `GET /v4/teams/{teamId}/matches?season=2026&status=FINISHED` | Partidas jogadas por uma seleção no ano | sem cache |
+| `GET /v4/matches/{matchId}` | Detalhes de uma partida (escalação, jogadores) | sem cache |
 
-**Limitação de taxa (rate limit):** 10 requisições/minuto no plano gratuito. O sistema mitiga isso com **cache em memória de 5 minutos** para cada endpoint:
+**Limitação de taxa (rate limit):** 10 requisições/minuto no plano gratuito. O sistema mitiga isso com **cache em memória de 5 minutos** para os endpoints que alimentam o dashboard, e com uma pausa de 7 segundos entre seleções no sync em massa (`sincronizarCopaDoMundo`):
 
 ```java
 // Pseudocódigo do padrão de cache implementado
@@ -123,14 +131,17 @@ return resposta;
 football-data.org API
         │  JSON via HTTPS
         ▼
-WebServer.java (parse Jackson ObjectMapper)
-        │  Objeto Java Partida
+ApiFootballClient.java (OkHttp + Jackson)
+        │  JsonNode
+        ▼
+DataSyncService.sincronizar(...)
+        │  Objetos Java: Regiao, Selecao, Temporada, Partida
         ▼
 PartidaRepository.salvar(partida)
         │  INSERT SQL via JDBC
         ▼
 PostgreSQL (tabela partida)
-        │  SELECT posterior
+        │  SELECT posterior via listarPorSelecaoOrdenado()
         ▼
 PredictionAlgorithm.prever(historico)
         │  Probabilidades calculadas
@@ -150,6 +161,54 @@ Uma *HashMap* oferece busca O(1) por chave exata, mas não suporta travessias or
 - Inserção/remoção: $O(\log n)$
 
 Em um índice de 6 confederações e ~200 seleções, a diferença prática é desprezível — mas a escolha demonstra o princípio de usar a estrutura de dados correta para o padrão de acesso esperado.
+
+### 1.5 Sincronização Automática (Auto-Sync)
+
+O sistema detecta automaticamente quando novos jogos foram disputados e aciona a sincronização em background, eliminando a necessidade de intervenção manual via CLI.
+
+**Problema resolvido:** os endpoints `/api/grupos` (standings ao vivo) e `/api/predicao/{id}` (dados do banco local) eram fontes de dados independentes. Um time podia aparecer com `j=1` na classificação mas "Sem partidas sincronizadas" no modal de predição — inconsistência visível ao usuário.
+
+**Mecanismo:**
+
+```
+Requisição GET /api/grupos
+        │
+        ▼
+buildGruposJson()
+  ├── Para cada time nos standings:
+  │     apiTeamIdPorTla[tla] ← team.id (ID do time na football-data.org)
+  │     apiJogosPlayed[tla]  ← playedGames
+        │
+        ▼
+autoSyncExecutor.submit(verificarEAutoSincronizar)
+  ├── Para cada TLA com apiJogos > 0:
+  │     sel ← selecaoRepo.buscarPorCodigoFifa(tla)
+  │     hist ← partidaRepo.listarPorSelecaoOrdenado(sel.id)
+  │     se hist.size() < apiJogos → tentarAutoSync(sel, tla)
+        │
+        ▼
+tentarAutoSync(sel, tla)
+  ├── emSincronizacao.add(tla)   ← guarda de concorrência (ConcurrentHashMap)
+  ├── DataSyncService.sincronizar(regiao, nome, tla, 0, teamId, 2026)
+  ├── cacheConfrontos = null     ← invalida cache dos confrontos
+  └── emSincronizacao.remove(tla)
+```
+
+**Garantias de concorrência:**
+
+O executor usa uma única thread (`newSingleThreadExecutor`), portanto os syncs são sempre sequenciais — nunca dois times são sincronizados ao mesmo tempo, o que respeita o rate limit de 10 req/min da API.
+
+A variável `emSincronizacao` é um `ConcurrentHashMap.newKeySet()`. A operação `add(tla)` é atômica: se duas threads tentarem adicionar o mesmo TLA simultaneamente, apenas uma retorna `true` e dispara o sync — a outra vê `false` e retorna `{sincronizando: true}` imediatamente, sem duplicar a requisição à API.
+
+**Estado visível no frontend:**
+
+| Situação | `/api/predicao/{id}` retorna | Modal exibe |
+|---|---|---|
+| Banco atualizado | `{totalPartidas: N, ...}` | Predição completa |
+| Sync em andamento | `{sincronizando: true}` | ⚙️ Calculando predição DKP... |
+| Sem jogos ainda (`j=0`) | `{error: "sem dados"}` | ⏳ Aguardando partidas |
+
+O frontend faz retry automático a cada 3 segundos enquanto `sincronizando: true`.
 
 ---
 
