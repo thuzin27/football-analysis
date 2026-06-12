@@ -6,4 +6,6 @@ srv_out.txt
 srv_err.txt
 test_input.txt
 test_output.txt
+test_out.txt
+test_err.txt
 .env
