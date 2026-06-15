@@ -3,32 +3,20 @@ package com.football.algorithm;
 import java.util.*;
 
 /**
- * BTreeNode / BTree
- * ---------------------------------------------------------------
- * Árvore B genérica adaptada para representar a hierarquia:
- *   REGIAO → SELECAO → TEMPORADA → JOGADOR → PARTIDA
+ * Árvore B genérica — busca O(log n) para navegação na hierarquia Regiao→Selecao.
  *
- * Cada nó armazena pares (chave, valor) ordenados.
- * Permite busca eficiente O(log n) para navegação na hierarquia.
- *
- * grauMinimo (t): número mínimo de filhos por nó interno.
- *   - cada nó tem no mínimo t-1 chaves e no máximo 2t-1 chaves
- *   - recomendado t=3 para datasets de futebol (não muito grande)
- * ---------------------------------------------------------------
+ * grauMinimo (t): nó tem no mínimo t-1 chaves e no máximo 2t-1 chaves.
  */
 public class BTree<K extends Comparable<K>, V> {
 
-    private final int grauMinimo; // t
+    private final int grauMinimo;
     private BTreeNode raiz;
 
-    // --------------------------------------------------------
-    //  Nó interno da Árvore B
-    // --------------------------------------------------------
     private class BTreeNode {
-        List<K>          chaves   = new ArrayList<>();
-        List<V>          valores  = new ArrayList<>();
-        List<BTreeNode>  filhos   = new ArrayList<>();
-        boolean          ehFolha;
+        List<K>         chaves  = new ArrayList<>();
+        List<V>         valores = new ArrayList<>();
+        List<BTreeNode> filhos  = new ArrayList<>();
+        boolean         ehFolha;
 
         BTreeNode(boolean ehFolha) {
             this.ehFolha = ehFolha;
@@ -43,10 +31,6 @@ public class BTree<K extends Comparable<K>, V> {
         this.raiz = new BTreeNode(true);
     }
 
-    // --------------------------------------------------------
-    //  BUSCA
-    // --------------------------------------------------------
-    /** Retorna o valor associado à chave, ou null se não encontrar. */
     public V buscar(K chave) {
         return buscarNo(raiz, chave);
     }
@@ -55,22 +39,18 @@ public class BTree<K extends Comparable<K>, V> {
         int i = 0;
         while (i < no.numChaves() && chave.compareTo(no.chaves.get(i)) > 0) i++;
 
-        if (i < no.numChaves() && chave.compareTo(no.chaves.get(i)) == 0) {
-            return no.valores.get(i); // encontrou
-        }
-        if (no.ehFolha) return null;  // não existe
+        if (i < no.numChaves() && chave.compareTo(no.chaves.get(i)) == 0)
+            return no.valores.get(i);
+        if (no.ehFolha) return null;
 
-        return buscarNo(no.filhos.get(i), chave); // desce para o filho
+        return buscarNo(no.filhos.get(i), chave);
     }
 
-    // --------------------------------------------------------
-    //  INSERÇÃO
-    // --------------------------------------------------------
     public void inserir(K chave, V valor) {
         BTreeNode r = raiz;
 
         if (r.numChaves() == 2 * grauMinimo - 1) {
-            // Raiz cheia: cria nova raiz e divide
+            // raiz cheia: cria nova raiz e divide
             BTreeNode s = new BTreeNode(false);
             raiz = s;
             s.filhos.add(r);
@@ -85,7 +65,6 @@ public class BTree<K extends Comparable<K>, V> {
         int i = no.numChaves() - 1;
 
         if (no.ehFolha) {
-            // Insere na posição correta mantendo ordenação
             no.chaves.add(null);
             no.valores.add(null);
             while (i >= 0 && chave.compareTo(no.chaves.get(i)) < 0) {
@@ -111,36 +90,29 @@ public class BTree<K extends Comparable<K>, V> {
         BTreeNode novo  = new BTreeNode(filho.ehFolha);
         int t = grauMinimo;
 
-        // Move metade superior do filho para novo nó
         for (int j = t; j < 2 * t - 1; j++) {
             novo.chaves.add(filho.chaves.get(j));
             novo.valores.add(filho.valores.get(j));
         }
         if (!filho.ehFolha) {
-            for (int j = t; j < 2 * t; j++) {
+            for (int j = t; j < 2 * t; j++)
                 novo.filhos.add(filho.filhos.get(j));
-            }
         }
 
-        // Chave do meio sobe para o pai
-        K chaveMeio  = filho.chaves.get(t - 1);
-        V valorMeio  = filho.valores.get(t - 1);
+        // a chave do meio sobe para o pai
+        K chaveMeio = filho.chaves.get(t - 1);
+        V valorMeio = filho.valores.get(t - 1);
 
-        // Trunca o filho original
         filho.chaves  = new ArrayList<>(filho.chaves.subList(0, t - 1));
         filho.valores = new ArrayList<>(filho.valores.subList(0, t - 1));
-        if (!filho.ehFolha) {
+        if (!filho.ehFolha)
             filho.filhos = new ArrayList<>(filho.filhos.subList(0, t));
-        }
 
         pai.chaves.add(i, chaveMeio);
         pai.valores.add(i, valorMeio);
         pai.filhos.add(i + 1, novo);
     }
 
-    // --------------------------------------------------------
-    //  PERCURSO em ordem (in-order traversal)
-    // --------------------------------------------------------
     public List<Map.Entry<K, V>> emOrdem() {
         List<Map.Entry<K, V>> resultado = new ArrayList<>();
         emOrdemNo(raiz, resultado);
@@ -155,7 +127,6 @@ public class BTree<K extends Comparable<K>, V> {
         if (!no.ehFolha) emOrdemNo(no.filhos.get(no.numChaves()), resultado);
     }
 
-    /** Retorna o número total de chaves armazenadas. */
     public int tamanho() {
         return emOrdem().size();
     }

@@ -1,9 +1,5 @@
 package com.football.model;
 
-/**
- * PARTIDA_JOGADOR — tabela de junção partida ↔ jogador
- * Tabela: partida_jogador (id, partida_id, jogador_id)
- */
 public class PartidaJogador {
     private int id;
     private int partidaId;
@@ -20,9 +16,9 @@ public class PartidaJogador {
     public int getPartidaId() { return partidaId; }
     public int getJogadorId() { return jogadorId; }
 
-    public void setId(int id)           { this.id = id; }
-    public void setPartidaId(int p)     { this.partidaId = p; }
-    public void setJogadorId(int j)     { this.jogadorId = j; }
+    public void setId(int id)        { this.id = id; }
+    public void setPartidaId(int p)  { this.partidaId = p; }
+    public void setJogadorId(int j)  { this.jogadorId = j; }
 
     @Override
     public String toString() {

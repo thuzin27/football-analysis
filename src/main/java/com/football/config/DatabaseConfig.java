@@ -72,7 +72,6 @@ public class DatabaseConfig {
                 config.setPassword(password);
             }
 
-            // Pool settings
             config.setMaximumPoolSize(10);
             config.setMinimumIdle(2);
             config.setConnectionTimeout(30_000);
@@ -80,7 +79,6 @@ public class DatabaseConfig {
             config.setMaxLifetime(1_800_000);
             config.setPoolName("FootballPool");
 
-            // Performance
             config.addDataSourceProperty("cachePrepStmts",       "true");
             config.addDataSourceProperty("prepStmtCacheSize",     "250");
             config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");

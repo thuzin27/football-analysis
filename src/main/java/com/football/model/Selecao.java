@@ -1,13 +1,9 @@
 package com.football.model;
 
-/**
- * SELECAO — filho de Regiao
- * Tabela: selecao (id, nome, codigo_fifa, regiao_id)
- */
 public class Selecao {
     private int    id;
     private String nome;
-    private String codigoFifa;   // ex: "BRA", "ARG"
+    private String codigoFifa;
     private int    regiaoId;
 
     public Selecao() {}
@@ -23,10 +19,10 @@ public class Selecao {
     public String getCodigoFifa() { return codigoFifa; }
     public int    getRegiaoId()   { return regiaoId; }
 
-    public void setId(int id)               { this.id = id; }
-    public void setNome(String nome)        { this.nome = nome; }
-    public void setCodigoFifa(String c)     { this.codigoFifa = c; }
-    public void setRegiaoId(int regiaoId)   { this.regiaoId = regiaoId; }
+    public void setId(int id)             { this.id = id; }
+    public void setNome(String nome)      { this.nome = nome; }
+    public void setCodigoFifa(String c)   { this.codigoFifa = c; }
+    public void setRegiaoId(int regiaoId) { this.regiaoId = regiaoId; }
 
     @Override
     public String toString() {

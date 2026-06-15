@@ -1,9 +1,5 @@
 package com.football.model;
 
-/**
- * TEMPORADA — filho de Selecao
- * Tabela: temporada (id, ano, selecao_id)
- */
 public class Temporada {
     private int id;
     private int ano;
@@ -16,13 +12,13 @@ public class Temporada {
         this.selecaoId = selecaoId;
     }
 
-    public int getId()          { return id; }
-    public int getAno()         { return ano; }
-    public int getSelecaoId()   { return selecaoId; }
+    public int getId()        { return id; }
+    public int getAno()       { return ano; }
+    public int getSelecaoId() { return selecaoId; }
 
-    public void setId(int id)           { this.id = id; }
-    public void setAno(int ano)         { this.ano = ano; }
-    public void setSelecaoId(int s)     { this.selecaoId = s; }
+    public void setId(int id)        { this.id = id; }
+    public void setAno(int ano)      { this.ano = ano; }
+    public void setSelecaoId(int s)  { this.selecaoId = s; }
 
     @Override
     public String toString() {

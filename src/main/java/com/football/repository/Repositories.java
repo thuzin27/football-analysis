@@ -7,16 +7,10 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Repositories — CRUD para o banco DataKick
- * Estrutura exata das tabelas:
- *   regiao, selecao, temporada, jogador, partida, partida_jogador, estatistica
- */
 public class Repositories {
 
-    // ============================================================
-    //  REGIAO
-    // ============================================================
+    // --- Regiao ---
+
     public static class RegiaoRepository {
 
         public Regiao salvar(Regiao r) throws SQLException {
@@ -61,13 +55,11 @@ public class Repositories {
         }
     }
 
-    // ============================================================
-    //  SELECAO
-    // ============================================================
+    // --- Selecao ---
+
     public static class SelecaoRepository {
 
         public Selecao salvar(Selecao s) throws SQLException {
-            // Tenta encontrar registro existente por (nome, regiao_id)
             String sel = "SELECT id FROM selecao WHERE nome = ? AND regiao_id = ?";
             try (Connection conn = DatabaseConfig.getConnection();
                  PreparedStatement ps = conn.prepareStatement(sel)) {
@@ -77,7 +69,6 @@ public class Repositories {
                     if (rs.next()) { s.setId(rs.getInt("id")); return s; }
                 }
             }
-            // Não existe — insere
             String ins = "INSERT INTO selecao (nome, codigo_fifa, regiao_id) VALUES (?, ?, ?) RETURNING id";
             try (Connection conn = DatabaseConfig.getConnection();
                  PreparedStatement ps = conn.prepareStatement(ins)) {
@@ -162,13 +153,11 @@ public class Repositories {
         }
     }
 
-    // ============================================================
-    //  TEMPORADA
-    // ============================================================
+    // --- Temporada ---
+
     public static class TemporadaRepository {
 
         public Temporada salvar(Temporada t) throws SQLException {
-            // Tenta encontrar registro existente por (ano, selecao_id)
             String sel = "SELECT id FROM temporada WHERE ano = ? AND selecao_id = ?";
             try (Connection conn = DatabaseConfig.getConnection();
                  PreparedStatement ps = conn.prepareStatement(sel)) {
@@ -178,7 +167,6 @@ public class Repositories {
                     if (rs.next()) { t.setId(rs.getInt("id")); return t; }
                 }
             }
-            // Não existe — insere
             String ins = "INSERT INTO temporada (ano, selecao_id) VALUES (?, ?) RETURNING id";
             try (Connection conn = DatabaseConfig.getConnection();
                  PreparedStatement ps = conn.prepareStatement(ins)) {
@@ -218,9 +206,8 @@ public class Repositories {
         }
     }
 
-    // ============================================================
-    //  JOGADOR
-    // ============================================================
+    // --- Jogador ---
+
     public static class JogadorRepository {
 
         public Jogador salvar(Jogador j) throws SQLException {
@@ -242,7 +229,7 @@ public class Repositories {
             return j;
         }
 
-        /** Lista ordenada por id — pronta para InterpolationSearch */
+        // ordenada por id ASC — pronta para InterpolationSearch
         public List<Jogador> listarTodosOrdenado() throws SQLException {
             List<Jogador> lista = new ArrayList<>();
             String sql = "SELECT id, nome, posicao, data_nascimento FROM jogador ORDER BY id ASC";
@@ -277,9 +264,8 @@ public class Repositories {
         }
     }
 
-    // ============================================================
-    //  PARTIDA
-    // ============================================================
+    // --- Partida ---
+
     public static class PartidaRepository {
 
         public Partida salvar(Partida p) throws SQLException {
@@ -304,7 +290,7 @@ public class Repositories {
             return p;
         }
 
-        /** Remove partidas (e estatísticas/partida_jogador vinculadas) de uma temporada. */
+        // Remove partidas e estatísticas/partida_jogador vinculadas — usado no re-sync
         public int deletarPorTemporada(int temporadaId) throws SQLException {
             try (Connection conn = DatabaseConfig.getConnection()) {
                 try (PreparedStatement ps = conn.prepareStatement("""
@@ -328,7 +314,7 @@ public class Repositories {
             }
         }
 
-        /** Lista ordenada por id — pronta para InterpolationSearch */
+        // ordenada por id ASC — pronta para InterpolationSearch
         public List<Partida> listarPorTemporadaOrdenado(int temporadaId) throws SQLException {
             List<Partida> lista = new ArrayList<>();
             String sql = "SELECT * FROM partida WHERE temporada_id = ? ORDER BY id ASC";
@@ -342,7 +328,7 @@ public class Repositories {
             return lista;
         }
 
-        /** Todas as partidas de uma seleção, em ordem cronológica — multi-temporada. */
+        // multi-temporada, em ordem cronológica
         public List<Partida> listarPorSelecaoOrdenado(int selecaoId) throws SQLException {
             List<Partida> lista = new ArrayList<>();
             String sql = """
@@ -386,9 +372,8 @@ public class Repositories {
         }
     }
 
-    // ============================================================
-    //  PARTIDA_JOGADOR
-    // ============================================================
+    // --- PartidaJogador ---
+
     public static class PartidaJogadorRepository {
 
         public PartidaJogador salvar(PartidaJogador pj) throws SQLException {
@@ -440,9 +425,8 @@ public class Repositories {
         }
     }
 
-    // ============================================================
-    //  ESTATISTICA
-    // ============================================================
+    // --- Estatistica ---
+
     public static class EstatisticaRepository {
 
         public Estatistica salvar(Estatistica e) throws SQLException {
@@ -479,10 +463,6 @@ public class Repositories {
             return null;
         }
 
-        /**
-         * Ranking de artilheiros de uma temporada.
-         * Percorre: estatistica → partida_jogador → partida → temporada
-         */
         public List<Object[]> rankingArtilheiros(int temporadaId, int limite) throws SQLException {
             List<Object[]> lista = new ArrayList<>();
             String sql = """
@@ -523,7 +503,7 @@ public class Repositories {
             return lista;
         }
 
-        /** Ranking de artilheiros de uma seleção em TODOS os anos (multi-temporada). */
+        // ranking de artilheiros de uma seleção em TODOS os anos sincronizados
         public List<Object[]> rankingArtilheirosSelecao(int selecaoId, int limite) throws SQLException {
             List<Object[]> lista = new ArrayList<>();
             String sql = """

@@ -8,25 +8,12 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-/**
- * ApiFootballClient — football-data.org v4
- *
- * Auth : header X-Auth-Token: {token}
- * Limite: 10 req/minuto (plano free) — verificado via X-Requests-Available-Minute
- *
- * Cobertura free tier (TIER_ONE):
- *   - Ligas europeias: PL, BL1, PD, SA, FL1, DED, PPL, ELC, CL
- *   - Copa do Mundo (WC) — temporada ATUAL
- *   - Brasileirão Série A (BSA) — clubes
- *
- * Para seleções nacionais: usa o endpoint de competição WC/EC e filtra pelo teamId.
- */
+// football-data.org v4 — auth via X-Auth-Token; limite free tier: 10 req/min
 public class ApiFootballClient {
 
     private static final String BASE_URL = "https://api.football-data.org";
@@ -45,9 +32,7 @@ public class ApiFootballClient {
         this.mapper = new ObjectMapper();
     }
 
-    // ----------------------------------------------------------------
-    //  Mapa local de seleções nacionais — IDs confirmados no football-data.org
-    // ----------------------------------------------------------------
+    // IDs confirmados no football-data.org para seleções nacionais
     private static final java.util.Map<String, Integer> NAC_IDS = new java.util.LinkedHashMap<>();
     static {
         NAC_IDS.put("brazil",          764);
@@ -105,21 +90,15 @@ public class ApiFootballClient {
         NAC_IDS.put("haiti",           476);
     }
 
-    // ----------------------------------------------------------------
-    //  ENDPOINTS
-    // ----------------------------------------------------------------
-
     /**
-     * Busca seleção/time por nome.
      * Estratégia 1: lookup local de seleções nacionais → GET /v4/teams/{id}
-     * Estratégia 2: ligas europeias (para clubes)
+     * Estratégia 2: varredura de ligas europeias para clubes
      */
     public List<JsonNode> buscarTimesPorNome(String nome) throws IOException {
         String q = nome.toLowerCase().trim();
         List<JsonNode> encontrados = new ArrayList<>();
         java.util.Set<Integer> vistos = new java.util.HashSet<>();
 
-        // Lookup local de seleções nacionais
         for (java.util.Map.Entry<String, Integer> entry : NAC_IDS.entrySet()) {
             if (entry.getKey().contains(q) || q.contains(entry.getKey())) {
                 int id = entry.getValue();
@@ -137,7 +116,6 @@ public class ApiFootballClient {
             }
         }
 
-        // Fallback: clubes em ligas europeias
         if (encontrados.isEmpty()) {
             String[] comps = {"/v4/competitions/PL/teams?season=2024",
                               "/v4/competitions/PD/teams?season=2024",
@@ -167,11 +145,6 @@ public class ApiFootballClient {
         return encontrados;
     }
 
-    /**
-     * Lista todas as seleções participantes da Copa do Mundo (temporada atual).
-     * GET /v4/competitions/WC/teams
-     * Response: {"teams": [{id, name, tla, area:{name}}]}
-     */
     public List<JsonNode> buscarTimesDaCopa() throws IOException {
         JsonNode root = getRaw("/v4/competitions/WC/teams");
         List<JsonNode> times = new ArrayList<>();
@@ -181,20 +154,10 @@ public class ApiFootballClient {
     }
 
     /**
-     * Partidas finalizadas de uma seleção em um ano.
-     *
-     * Estratégia 1 — endpoint direto do time:
-     *   GET /v4/teams/{id}/matches?season={ano}&status=FINISHED
-     *   Funciona para clubes; para seleções nacionais retorna 403 se a competição não
-     *   for coberta (ex: Copa América não está no plano free).
-     *
-     * Estratégia 2 — varredura de competições TIER_ONE filtrada por teamId:
-     *   Cobre Copa do Mundo (WC) e Eurocopa (EC) da temporada ATUAL,
-     *   e ligas europeias para clubes.
+     * Estratégia 1 — endpoint direto do time (funciona para clubes; 403 para seleções não cobertas).
+     * Estratégia 2 — varredura de competições TIER_ONE filtrada por teamId (só alcançada via 403).
      */
     public List<JsonNode> buscarPartidasDaSelecao(int teamId, int ano) throws IOException {
-        // Tentativa 1: endpoint direto do time
-        // Se retorna 200 (mesmo com 0 partidas), para aqui — sem fallback desnecessário
         try {
             JsonNode root = getRaw("/v4/teams/" + teamId
                 + "/matches?season=" + ano + "&status=FINISHED");
@@ -202,14 +165,12 @@ public class ApiFootballClient {
             JsonNode matches = root.path("matches");
             if (matches.isArray()) matches.forEach(resultado::add);
             System.out.println("[API] " + resultado.size() + " partidas (endpoint direto)");
-            return resultado; // retorna imediatamente — 0 partidas é válido
+            return resultado;
         } catch (IOException e) {
             if (!e.getMessage().startsWith("HTTP 403")) throw e;
             System.out.println("[API] 403 no endpoint direto — varrendo competições...");
         }
 
-        // Tentativa 2 — só chegamos aqui via 403 (plano free sem cobertura da comp.)
-        // Varre competições TIER_ONE procurando partidas deste time
         List<JsonNode> resultado2 = new ArrayList<>();
         String[] comps = {"WC", "EC", "CL", "PL", "PD", "BL1", "SA", "FL1", "DED", "PPL", "BSA"};
         for (String comp : comps) {
@@ -235,17 +196,9 @@ public class ApiFootballClient {
         return resultado2;
     }
 
-    /**
-     * Detalhes de uma partida: escalação + gols + cartões.
-     * GET /v4/matches/{id}
-     */
     public JsonNode buscarDetalhesPartida(int matchId) throws IOException {
         return getRaw("/v4/matches/" + matchId);
     }
-
-    // ----------------------------------------------------------------
-    //  HTTP BASE
-    // ----------------------------------------------------------------
 
     public JsonNode getRaw(String endpoint) throws IOException {
         Request request = new Request.Builder()
@@ -268,7 +221,6 @@ public class ApiFootballClient {
                 System.err.println("[API] Body: " + body.substring(0, Math.min(300, body.length())));
                 throw new IOException("HTTP " + response.code() + " → " + endpoint);
             }
-            System.out.println("[API] OK " + response.code());
             return mapper.readTree(body);
         }
     }
