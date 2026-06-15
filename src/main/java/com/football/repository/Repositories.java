@@ -30,18 +30,6 @@ public class Repositories {
             return r;
         }
 
-        public List<Regiao> listarTodas() throws SQLException {
-            List<Regiao> lista = new ArrayList<>();
-            String sql = "SELECT id, nome FROM regiao ORDER BY id";
-            try (Connection conn = DatabaseConfig.getConnection();
-                 PreparedStatement ps = conn.prepareStatement(sql);
-                 ResultSet rs = ps.executeQuery()) {
-                while (rs.next())
-                    lista.add(new Regiao(rs.getInt("id"), rs.getString("nome")));
-            }
-            return lista;
-        }
-
         public Regiao buscarPorId(int id) throws SQLException {
             String sql = "SELECT id, nome FROM regiao WHERE id = ?";
             try (Connection conn = DatabaseConfig.getConnection();
@@ -82,30 +70,6 @@ public class Repositories {
             return s;
         }
 
-        public List<Selecao> listarPorRegiao(int regiaoId) throws SQLException {
-            List<Selecao> lista = new ArrayList<>();
-            String sql = "SELECT id, nome, codigo_fifa, regiao_id FROM selecao WHERE regiao_id = ? ORDER BY nome";
-            try (Connection conn = DatabaseConfig.getConnection();
-                 PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setInt(1, regiaoId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) lista.add(mapear(rs));
-                }
-            }
-            return lista;
-        }
-
-        public List<Selecao> listarTodasOrdenado() throws SQLException {
-            List<Selecao> lista = new ArrayList<>();
-            String sql = "SELECT id, nome, codigo_fifa, regiao_id FROM selecao ORDER BY id ASC";
-            try (Connection conn = DatabaseConfig.getConnection();
-                 PreparedStatement ps = conn.prepareStatement(sql);
-                 ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) lista.add(mapear(rs));
-            }
-            return lista;
-        }
-
         public Selecao buscarPorId(int id) throws SQLException {
             String sql = "SELECT id, nome, codigo_fifa, regiao_id FROM selecao WHERE id = ?";
             try (Connection conn = DatabaseConfig.getConnection();
@@ -116,19 +80,6 @@ public class Repositories {
                 }
             }
             return null;
-        }
-
-        public List<Selecao> buscarPorNome(String nome) throws SQLException {
-            List<Selecao> lista = new ArrayList<>();
-            String sql = "SELECT id, nome, codigo_fifa, regiao_id FROM selecao WHERE LOWER(nome) LIKE LOWER(?) ORDER BY nome";
-            try (Connection conn = DatabaseConfig.getConnection();
-                 PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, "%" + nome + "%");
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) lista.add(mapear(rs));
-                }
-            }
-            return lista;
         }
 
         public Selecao buscarPorCodigoFifa(String codigoFifa) throws SQLException {
@@ -178,32 +129,6 @@ public class Repositories {
             }
             return t;
         }
-
-        public List<Temporada> listarPorSelecao(int selecaoId) throws SQLException {
-            List<Temporada> lista = new ArrayList<>();
-            String sql = "SELECT id, ano, selecao_id FROM temporada WHERE selecao_id = ? ORDER BY ano DESC";
-            try (Connection conn = DatabaseConfig.getConnection();
-                 PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setInt(1, selecaoId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next())
-                        lista.add(new Temporada(rs.getInt("id"), rs.getInt("ano"), rs.getInt("selecao_id")));
-                }
-            }
-            return lista;
-        }
-
-        public List<Temporada> listarTodasOrdenado() throws SQLException {
-            List<Temporada> lista = new ArrayList<>();
-            String sql = "SELECT id, ano, selecao_id FROM temporada ORDER BY id ASC";
-            try (Connection conn = DatabaseConfig.getConnection();
-                 PreparedStatement ps = conn.prepareStatement(sql);
-                 ResultSet rs = ps.executeQuery()) {
-                while (rs.next())
-                    lista.add(new Temporada(rs.getInt("id"), rs.getInt("ano"), rs.getInt("selecao_id")));
-            }
-            return lista;
-        }
     }
 
     // --- Jogador ---
@@ -229,39 +154,6 @@ public class Repositories {
             return j;
         }
 
-        // ordenada por id ASC — pronta para InterpolationSearch
-        public List<Jogador> listarTodosOrdenado() throws SQLException {
-            List<Jogador> lista = new ArrayList<>();
-            String sql = "SELECT id, nome, posicao, data_nascimento FROM jogador ORDER BY id ASC";
-            try (Connection conn = DatabaseConfig.getConnection();
-                 PreparedStatement ps = conn.prepareStatement(sql);
-                 ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) lista.add(mapear(rs));
-            }
-            return lista;
-        }
-
-        public Jogador buscarPorId(int id) throws SQLException {
-            String sql = "SELECT id, nome, posicao, data_nascimento FROM jogador WHERE id = ?";
-            try (Connection conn = DatabaseConfig.getConnection();
-                 PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setInt(1, id);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) return mapear(rs);
-                }
-            }
-            return null;
-        }
-
-        private Jogador mapear(ResultSet rs) throws SQLException {
-            Date d = rs.getDate("data_nascimento");
-            return new Jogador(
-                rs.getInt("id"),
-                rs.getString("nome"),
-                rs.getString("posicao"),
-                d != null ? d.toLocalDate() : null
-            );
-        }
     }
 
     // --- Partida ---
@@ -314,20 +206,6 @@ public class Repositories {
             }
         }
 
-        // ordenada por id ASC — pronta para InterpolationSearch
-        public List<Partida> listarPorTemporadaOrdenado(int temporadaId) throws SQLException {
-            List<Partida> lista = new ArrayList<>();
-            String sql = "SELECT * FROM partida WHERE temporada_id = ? ORDER BY id ASC";
-            try (Connection conn = DatabaseConfig.getConnection();
-                 PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setInt(1, temporadaId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) lista.add(mapear(rs));
-                }
-            }
-            return lista;
-        }
-
         // multi-temporada, em ordem cronológica
         public List<Partida> listarPorSelecaoOrdenado(int selecaoId) throws SQLException {
             List<Partida> lista = new ArrayList<>();
@@ -343,17 +221,6 @@ public class Repositories {
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) lista.add(mapear(rs));
                 }
-            }
-            return lista;
-        }
-
-        public List<Partida> listarTodasOrdenado() throws SQLException {
-            List<Partida> lista = new ArrayList<>();
-            String sql = "SELECT * FROM partida ORDER BY id ASC";
-            try (Connection conn = DatabaseConfig.getConnection();
-                 PreparedStatement ps = conn.prepareStatement(sql);
-                 ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) lista.add(mapear(rs));
             }
             return lista;
         }
@@ -393,36 +260,6 @@ public class Repositories {
             }
             return pj;
         }
-
-        public List<PartidaJogador> listarPorPartida(int partidaId) throws SQLException {
-            List<PartidaJogador> lista = new ArrayList<>();
-            String sql = "SELECT id, partida_id, jogador_id FROM partida_jogador WHERE partida_id = ? ORDER BY id ASC";
-            try (Connection conn = DatabaseConfig.getConnection();
-                 PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setInt(1, partidaId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next())
-                        lista.add(new PartidaJogador(
-                            rs.getInt("id"), rs.getInt("partida_id"), rs.getInt("jogador_id")));
-                }
-            }
-            return lista;
-        }
-
-        public List<PartidaJogador> listarPorJogador(int jogadorId) throws SQLException {
-            List<PartidaJogador> lista = new ArrayList<>();
-            String sql = "SELECT id, partida_id, jogador_id FROM partida_jogador WHERE jogador_id = ? ORDER BY id ASC";
-            try (Connection conn = DatabaseConfig.getConnection();
-                 PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setInt(1, jogadorId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next())
-                        lista.add(new PartidaJogador(
-                            rs.getInt("id"), rs.getInt("partida_id"), rs.getInt("jogador_id")));
-                }
-            }
-            return lista;
-        }
     }
 
     // --- Estatistica ---
@@ -449,108 +286,6 @@ public class Repositories {
                 }
             }
             return e;
-        }
-
-        public Estatistica buscarPorPartidaJogador(int partidaJogadorId) throws SQLException {
-            String sql = "SELECT * FROM estatistica WHERE partida_jogador_id = ?";
-            try (Connection conn = DatabaseConfig.getConnection();
-                 PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setInt(1, partidaJogadorId);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) return mapear(rs);
-                }
-            }
-            return null;
-        }
-
-        public List<Object[]> rankingArtilheiros(int temporadaId, int limite) throws SQLException {
-            List<Object[]> lista = new ArrayList<>();
-            String sql = """
-                SELECT j.id, j.nome, j.posicao,
-                       SUM(e.gols)         AS total_gols,
-                       SUM(e.assistencias) AS total_assist,
-                       SUM(e.minutos)      AS total_minutos,
-                       SUM(e.amarelos)     AS total_amarelos,
-                       COUNT(pj.id)        AS total_jogos
-                FROM   estatistica e
-                JOIN   partida_jogador pj ON pj.id    = e.partida_jogador_id
-                JOIN   jogador         j  ON j.id     = pj.jogador_id
-                JOIN   partida         p  ON p.id     = pj.partida_id
-                WHERE  p.temporada_id = ?
-                GROUP  BY j.id, j.nome, j.posicao
-                ORDER  BY total_gols DESC, total_assist DESC
-                LIMIT  ?
-                """;
-            try (Connection conn = DatabaseConfig.getConnection();
-                 PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setInt(1, temporadaId);
-                ps.setInt(2, limite);
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        lista.add(new Object[]{
-                            rs.getInt("id"),
-                            rs.getString("nome"),
-                            rs.getString("posicao"),
-                            rs.getInt("total_gols"),
-                            rs.getInt("total_assist"),
-                            rs.getInt("total_minutos"),
-                            rs.getInt("total_amarelos"),
-                            rs.getInt("total_jogos")
-                        });
-                    }
-                }
-            }
-            return lista;
-        }
-
-        // ranking de artilheiros de uma seleção em TODOS os anos sincronizados
-        public List<Object[]> rankingArtilheirosSelecao(int selecaoId, int limite) throws SQLException {
-            List<Object[]> lista = new ArrayList<>();
-            String sql = """
-                SELECT j.id, j.nome, j.posicao,
-                       SUM(e.gols)         AS total_gols,
-                       SUM(e.assistencias) AS total_assist,
-                       SUM(e.minutos)      AS total_minutos,
-                       SUM(e.amarelos)     AS total_amarelos,
-                       COUNT(pj.id)        AS total_jogos
-                FROM   estatistica e
-                JOIN   partida_jogador pj ON pj.id = e.partida_jogador_id
-                JOIN   jogador         j  ON j.id  = pj.jogador_id
-                JOIN   partida         p  ON p.id  = pj.partida_id
-                JOIN   temporada       t  ON t.id  = p.temporada_id
-                WHERE  t.selecao_id = ?
-                GROUP  BY j.id, j.nome, j.posicao
-                ORDER  BY total_gols DESC, total_assist DESC
-                LIMIT  ?
-                """;
-            try (Connection conn = DatabaseConfig.getConnection();
-                 PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setInt(1, selecaoId);
-                ps.setInt(2, limite);
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        lista.add(new Object[]{
-                            rs.getInt("id"), rs.getString("nome"), rs.getString("posicao"),
-                            rs.getInt("total_gols"), rs.getInt("total_assist"),
-                            rs.getInt("total_minutos"), rs.getInt("total_amarelos"),
-                            rs.getInt("total_jogos")
-                        });
-                    }
-                }
-            }
-            return lista;
-        }
-
-        private Estatistica mapear(ResultSet rs) throws SQLException {
-            return new Estatistica(
-                rs.getInt("id"),
-                rs.getInt("partida_jogador_id"),
-                rs.getInt("minutos"),
-                rs.getInt("gols"),
-                rs.getInt("assistencias"),
-                rs.getInt("amarelos"),
-                rs.getInt("vermelhos")
-            );
         }
     }
 }

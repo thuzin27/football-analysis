@@ -32,62 +32,6 @@ public class DataSyncService {
         this.estatRepo     = new EstatisticaRepository();
     }
 
-    // teamId football-data.org → confederação/região
-    private static final java.util.Map<Integer, String> CONFEDERACAO = new java.util.HashMap<>();
-    static {
-        for (int id : new int[]{758,761,762,764,791,818})
-            CONFEDERACAO.put(id, "América do Sul");
-        for (int id : new int[]{759,760,765,770,773,788,792,798,799,803,805,816,1060,8601,8872,8873})
-            CONFEDERACAO.put(id, "Europa");
-        for (int id : new int[]{763,774,778,802,804,815,825,1930,1934,1935})
-            CONFEDERACAO.put(id, "África");
-        for (int id : new int[]{769,771,828,836,1836,9460})
-            CONFEDERACAO.put(id, "América do Norte");
-        for (int id : new int[]{766,772,779,801,840,8030,8049,8062,8070})
-            CONFEDERACAO.put(id, "Ásia");
-        for (int id : new int[]{783})
-            CONFEDERACAO.put(id, "Oceania");
-    }
-
-    public void sincronizarCopaDoMundo(int ano) throws java.io.IOException, java.sql.SQLException {
-        System.out.println("\n╔══════════════════════════════════════════════╗");
-        System.out.printf ("║  SYNC COPA DO MUNDO %d — todas as seleções  ║%n", ano);
-        System.out.println("╚══════════════════════════════════════════════╝");
-
-        java.util.List<com.fasterxml.jackson.databind.JsonNode> times = apiClient.buscarTimesDaCopa();
-        System.out.println("[Copa] " + times.size() + " seleções encontradas.\n");
-
-        int countTotal = 0;
-        int countErros = 0;
-
-        for (int i = 0; i < times.size(); i++) {
-            com.fasterxml.jackson.databind.JsonNode t = times.get(i);
-            int    teamId = t.path("id").asInt(-1);
-            String nome   = t.path("name").asText("?");
-            String tla    = t.path("tla").asText("?");
-            String regiao = CONFEDERACAO.getOrDefault(teamId, "Outros");
-
-            System.out.printf("[%2d/%d] %s (%s) → %s%n", i + 1, times.size(), nome, tla, regiao);
-
-            try {
-                sincronizar(regiao, nome, tla, 0, teamId, ano);
-                countTotal++;
-            } catch (Exception e) {
-                System.err.println("[ERRO] " + nome + ": " + e.getMessage());
-                countErros++;
-            }
-
-            // pausa para respeitar o rate limit da API (10 req/min)
-            if (i < times.size() - 1) {
-                try { Thread.sleep(7_000); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
-            }
-        }
-
-        System.out.printf("%n╔══════════════════════════════════════════════╗%n");
-        System.out.printf("║  Copa sincronizada: %d OK | %d erros          ║%n", countTotal, countErros);
-        System.out.println("╚══════════════════════════════════════════════╝");
-    }
-
     public void sincronizar(String nomeRegiao, String nomeSelecao,
                              String codigoFifa, int leagueId, int teamId, int ano)
             throws IOException, SQLException {

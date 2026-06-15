@@ -8,7 +8,6 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -30,127 +29,6 @@ public class ApiFootballClient {
                 .readTimeout(30,  TimeUnit.SECONDS)
                 .build();
         this.mapper = new ObjectMapper();
-    }
-
-    // IDs confirmados no football-data.org para seleções nacionais
-    private static final java.util.Map<String, Integer> NAC_IDS = new java.util.LinkedHashMap<>();
-    static {
-        NAC_IDS.put("brazil",          764);
-        NAC_IDS.put("brasil",          764);
-        NAC_IDS.put("argentina",       974);
-        NAC_IDS.put("france",          773);
-        NAC_IDS.put("franca",          773);
-        NAC_IDS.put("portugal",        765);
-        NAC_IDS.put("germany",         759);
-        NAC_IDS.put("alemanha",        759);
-        NAC_IDS.put("spain",           760);
-        NAC_IDS.put("espanha",         760);
-        NAC_IDS.put("england",         770);
-        NAC_IDS.put("inglaterra",      770);
-        NAC_IDS.put("italy",           784);
-        NAC_IDS.put("italia",          784);
-        NAC_IDS.put("netherlands",     786);
-        NAC_IDS.put("holanda",         786);
-        NAC_IDS.put("belgium",         803);
-        NAC_IDS.put("belgica",         803);
-        NAC_IDS.put("colombia",        779);
-        NAC_IDS.put("chile",           777);
-        NAC_IDS.put("mexico",          758);
-        NAC_IDS.put("uruguay",         788);
-        NAC_IDS.put("usa",             768);
-        NAC_IDS.put("estados unidos",  768);
-        NAC_IDS.put("japan",           783);
-        NAC_IDS.put("japao",           783);
-        NAC_IDS.put("south korea",     772);
-        NAC_IDS.put("coreia do sul",   772);
-        NAC_IDS.put("morocco",         799);
-        NAC_IDS.put("marrocos",        799);
-        NAC_IDS.put("croatia",         776);
-        NAC_IDS.put("croacia",         776);
-        NAC_IDS.put("switzerland",     788);
-        NAC_IDS.put("suica",           788);
-        NAC_IDS.put("denmark",         778);
-        NAC_IDS.put("dinamarca",       778);
-        NAC_IDS.put("poland",          794);
-        NAC_IDS.put("polonia",         794);
-        NAC_IDS.put("australia",       775);
-        NAC_IDS.put("ecuador",         780);
-        NAC_IDS.put("senegal",         800);
-        NAC_IDS.put("ghana",           781);
-        NAC_IDS.put("serbia",          795);
-        NAC_IDS.put("servia",          795);
-        NAC_IDS.put("wales",           771);
-        NAC_IDS.put("gales",           771);
-        NAC_IDS.put("saudi arabia",    756);
-        NAC_IDS.put("arabia saudita",  756);
-        NAC_IDS.put("iran",            782);
-        NAC_IDS.put("cameroon",        790);
-        NAC_IDS.put("scotland",        769);
-        NAC_IDS.put("escocia",         769);
-        NAC_IDS.put("haiti",           476);
-    }
-
-    /**
-     * Estratégia 1: lookup local de seleções nacionais → GET /v4/teams/{id}
-     * Estratégia 2: varredura de ligas europeias para clubes
-     */
-    public List<JsonNode> buscarTimesPorNome(String nome) throws IOException {
-        String q = nome.toLowerCase().trim();
-        List<JsonNode> encontrados = new ArrayList<>();
-        java.util.Set<Integer> vistos = new java.util.HashSet<>();
-
-        for (java.util.Map.Entry<String, Integer> entry : NAC_IDS.entrySet()) {
-            if (entry.getKey().contains(q) || q.contains(entry.getKey())) {
-                int id = entry.getValue();
-                if (vistos.contains(id)) continue;
-                try {
-                    JsonNode t = getRaw("/v4/teams/" + id);
-                    if (t.path("id").asInt(-1) > 0) {
-                        vistos.add(id);
-                        encontrados.add(t);
-                    }
-                } catch (Exception e) {
-                    System.err.println("[API] teams/" + id + ": " + e.getMessage());
-                }
-                if (!encontrados.isEmpty()) break;
-            }
-        }
-
-        if (encontrados.isEmpty()) {
-            String[] comps = {"/v4/competitions/PL/teams?season=2024",
-                              "/v4/competitions/PD/teams?season=2024",
-                              "/v4/competitions/BL1/teams?season=2024",
-                              "/v4/competitions/SA/teams?season=2024",
-                              "/v4/competitions/FL1/teams?season=2024",
-                              "/v4/competitions/CL/teams?season=2024"};
-            for (String endpoint : comps) {
-                try {
-                    JsonNode arr = getRaw(endpoint).path("teams");
-                    if (!arr.isArray()) continue;
-                    for (JsonNode t : arr) {
-                        int id = t.path("id").asInt(-1);
-                        if (id < 0 || vistos.contains(id)) continue;
-                        String n = t.path("name").asText("").toLowerCase();
-                        String s = t.path("shortName").asText("").toLowerCase();
-                        String c = t.path("tla").asText("").toLowerCase();
-                        if (n.contains(q) || s.contains(q) || c.contains(q)) {
-                            vistos.add(id);
-                            encontrados.add(t);
-                        }
-                    }
-                    if (!encontrados.isEmpty()) break;
-                } catch (Exception ignored) {}
-            }
-        }
-        return encontrados;
-    }
-
-    public List<JsonNode> buscarTimesDaCopa() throws IOException {
-        JsonNode root = getRaw("/v4/competitions/WC/teams");
-        List<JsonNode> times = new ArrayList<>();
-        JsonNode arr = root.path("teams");
-        if (arr.isArray()) arr.forEach(times::add);
-        return times;
     }
 
     /**

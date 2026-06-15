@@ -88,8 +88,6 @@ public class WebServer {
         }
     }
 
-    public boolean isRodando() { return rodando; }
-
     private void handleRoot(HttpExchange ex) throws IOException {
         if (!"GET".equals(ex.getRequestMethod())) { responder(ex, 405, "text/plain", "Method Not Allowed"); return; }
         try (InputStream is = getClass().getResourceAsStream("/web/index.html")) {
